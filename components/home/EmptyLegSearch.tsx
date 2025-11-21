@@ -66,8 +66,8 @@ export default function EmptyLegSearch() {
   };
 
   return (
-    <Card className=":border border-[#D4AF37]/20 p-4 lg:shadow-xl lg:bg-black/50 h-full">
-      <div className="p-4 md:p-6 bg-white h-full">
+    <Card className=":border border-[#D4AF37]/20 p-2 md:p-6 lg:shadow-xl lg:bg-black/50 h-full">
+      <div className="p-0 md:p-6 bg-white h-full">
         <p className="text-xl font-bold mb-6 text-black uppercase tracking-wide">
           Empty Leg Flights
         </p>
