@@ -1,17 +1,8 @@
 // components/empty-leg/FlightDetails.tsx
 "use client";
 
-import React from "react";
 import { Card } from "../ui/card";
-import {
-  MapPin,
-  Calendar,
-  Users,
-  Clock,
-  DollarSign,
-  Gauge,
-  Package,
-} from "lucide-react";
+import { MapPin, Calendar, Users, Clock, Gauge, Package } from "lucide-react";
 
 interface FlightDetailsProps {
   selectedDeal: any;

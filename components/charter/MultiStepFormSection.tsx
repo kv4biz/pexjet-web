@@ -15,21 +15,51 @@ export function MultiStepFormSection() {
   const [formData, setFormData] = useState<any>({});
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
-  // Listen for search form submission from HeroSection
+  // Check for stored search data on component mount
+  useEffect(() => {
+    const storedSearchData = sessionStorage.getItem("charterSearchData");
+
+    if (storedSearchData) {
+      try {
+        const searchData = JSON.parse(storedSearchData);
+        setFormData({ searchData });
+        setShowLoading(true);
+        setShowForm(false);
+
+        // Clear the stored data so it doesn't trigger again on refresh
+        sessionStorage.removeItem("charterSearchData");
+
+        // After loading animation, show the form
+        setTimeout(() => {
+          setShowLoading(false);
+          setShowForm(true);
+          setCurrentStep(1);
+
+          // Scroll to this section
+          setTimeout(() => {
+            const element = document.getElementById("multi-step-form-section");
+            element?.scrollIntoView({ behavior: "smooth", block: "start" });
+          }, 100);
+        }, 8000);
+      } catch (error) {
+        console.error("Error parsing stored search data:", error);
+      }
+    }
+  }, []);
+
+  // Keep the existing event listener for backward compatibility
   useEffect(() => {
     const handleSearchSubmitted = (event: CustomEvent) => {
       const searchData = event.detail;
       setFormData({ searchData });
       setShowLoading(true);
-      setShowForm(false); // Ensure form is hidden when loading starts
+      setShowForm(false);
 
-      // After loading animation, show the form
       setTimeout(() => {
         setShowLoading(false);
         setShowForm(true);
         setCurrentStep(1);
 
-        // Scroll to this section
         setTimeout(() => {
           const element = document.getElementById("multi-step-form-section");
           element?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -50,14 +80,13 @@ export function MultiStepFormSection() {
     };
   }, []);
 
-  // In MultiStepFormSection.tsx - these functions should properly merge data
   const handleStep1Next = (data: any) => {
-    setFormData({ ...formData, ...data }); // This merges aircraft selection
+    setFormData({ ...formData, ...data });
     setCurrentStep(2);
   };
 
   const handleStep2Next = (data: any) => {
-    setFormData({ ...formData, ...data }); // This merges contact info
+    setFormData({ ...formData, ...data });
     setCurrentStep(3);
   };
 
@@ -84,14 +113,14 @@ export function MultiStepFormSection() {
   };
 
   if (!showForm && !showLoading) {
-    return null; // Don't show anything until search is submitted
+    return null;
   }
 
   return (
     <section id="multi-step-form-section" className="py-16 bg-white">
       <div className="w-full lg:max-w-10/12 mx-auto px-4">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Column - Animation OR Multi-step Form (never both) */}
+          {/* Left Column - Animation OR Multi-step Form */}
           <div className="lg:col-span-2">
             {showLoading && !showForm && (
               <LoadingAnimation
@@ -116,7 +145,7 @@ export function MultiStepFormSection() {
             )}
           </div>
 
-          {/* Right Column - Flight Summary (Always shows when there's data) */}
+          {/* Right Column - Flight Summary */}
           <div className="hidden lg:block lg:col-span-1">
             {(showLoading || showForm) && (
               <FlightSummary formData={formData} currentStep={currentStep} />
@@ -124,7 +153,7 @@ export function MultiStepFormSection() {
           </div>
         </div>
 
-        {/* Success Modal with Disclaimer */}
+        {/* Success Modal */}
         {showSuccessModal && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
             <div className="bg-white max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">

@@ -1,3 +1,4 @@
+// components/home/EmptyLegSearch.tsx
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
@@ -6,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Calendar20 } from "../calendar-20";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 const airports = [
   { code: "JFK", city: "New York", country: "USA", flag: "🇺🇸" },
@@ -20,9 +21,12 @@ const airports = [
 ];
 
 export default function EmptyLegSearch() {
+  const router = useRouter();
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [passengers, setPassengers] = useState(1);
+  const [date, setDate] = useState<string | null>(null);
+  const [time, setTime] = useState<string | null>(null);
   const [openFrom, setOpenFrom] = useState(false);
   const [openTo, setOpenTo] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -55,18 +59,36 @@ export default function EmptyLegSearch() {
     setTo(from);
   };
 
+  // Handle Calendar20 date changes
+  const handleDateChange = (value: {
+    date?: string | null;
+    time?: string | null;
+  }) => {
+    setDate(value.date || null);
+    setTime(value.time || null);
+  };
+
   const handleSubmit = () => {
     const payload = {
       type: "emptyLeg",
       from,
       to,
       passengers,
+      date,
+      time,
     };
+
     console.log("Empty Leg Submit:", payload);
+
+    // Store the search data in sessionStorage
+    sessionStorage.setItem("emptyLegSearchData", JSON.stringify(payload));
+
+    // Navigate to empty-leg page
+    router.push("/empty-leg");
   };
 
   return (
-    <Card className=":border border-[#D4AF37]/20 p-2 md:p-6 lg:shadow-xl lg:bg-black/50 h-full">
+    <Card className="border border-[#D4AF37]/20 p-2 md:p-6 lg:shadow-xl lg:bg-black/50 h-full">
       <div className="p-0 md:p-6 bg-white h-full">
         <p className="text-xl font-bold mb-6 text-black uppercase tracking-wide">
           Empty Leg Flights
@@ -150,7 +172,10 @@ export default function EmptyLegSearch() {
           {/* Line 2: Departure Date */}
           <div className="flex gap-2">
             <div className="w-full">
-              <Calendar20 placeholder="Departure Date" />
+              <Calendar20
+                placeholder="Departure Date"
+                onChange={handleDateChange}
+              />
             </div>
           </div>
 
@@ -178,16 +203,14 @@ export default function EmptyLegSearch() {
         </div>
 
         {/* Action button */}
-        <Link href={"/empty-leg"} className="mt-6">
-          <Button
-            variant={"outline"}
-            onClick={handleSubmit}
-            className="w-full bg-[#D4AF37] text-[#0C0C0C]"
-          >
-            <Search className="w-4 h-4 mr-2" />
-            Search Flights
-          </Button>
-        </Link>
+        <Button
+          variant={"outline"}
+          onClick={handleSubmit}
+          className="w-full mt-6 bg-[#D4AF37] text-[#0C0C0C]"
+        >
+          <Search className="w-4 h-4 mr-2" />
+          Search Flights
+        </Button>
       </div>
     </Card>
   );

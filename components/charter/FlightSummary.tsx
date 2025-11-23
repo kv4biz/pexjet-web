@@ -20,16 +20,32 @@ export function FlightSummary({ formData, currentStep }: FlightSummaryProps) {
 
   if (!searchData) return null;
 
+  // Helper function to format date for display
+  const formatDateForDisplay = (dateString: string | null) => {
+    if (!dateString) return "Not selected";
+
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      });
+    } catch {
+      return dateString;
+    }
+  };
+
   // Calculate price and time ranges for multiple aircraft
   const calculateRanges = () => {
     if (!selectedAircraft || selectedAircraft.length === 0) return null;
 
     const prices = selectedAircraft.map((aircraft: { price: string }) =>
-      parseFloat(aircraft.price.replace(/[^\d.]/g, ""))
+      parseFloat(aircraft.price?.replace(/[^\d.]/g, "") || "0")
     );
     const flightTimes = selectedAircraft.map(
       (aircraft: { flightTime: string }) =>
-        parseFloat(aircraft.flightTime.replace(" hrs", ""))
+        parseFloat(aircraft.flightTime?.replace(" hrs", "") || "0")
     );
 
     const minPrice = Math.min(...prices);
@@ -39,7 +55,7 @@ export function FlightSummary({ formData, currentStep }: FlightSummaryProps) {
 
     // Calculate total for multi-leg
     const multiplier =
-      searchData.tripType === "multi-leg" && searchData.flights
+      searchData.tripType === "multiLeg" && searchData.flights
         ? searchData.flights.length
         : 1;
 
@@ -55,6 +71,43 @@ export function FlightSummary({ formData, currentStep }: FlightSummaryProps) {
 
   const ranges = calculateRanges();
 
+  // Get flights array - handle both data structures
+  const getFlights = () => {
+    if (searchData.flights) {
+      return searchData.flights;
+    }
+    // Fallback for old data structure
+    return [
+      {
+        id: "1",
+        from: searchData.departureAirport,
+        to: searchData.destinationAirport,
+        date: searchData.departureDate,
+        returnDate: searchData.returnDate,
+        time: searchData.departureTime,
+        passengers: searchData.passengers,
+      },
+    ];
+  };
+
+  // Get trip type - handle both data structures
+  const getTripType = () => {
+    return searchData.tripType || "oneWay";
+  };
+
+  // Get passenger count
+  const getPassengerCount = () => {
+    return (
+      searchData.passengers ||
+      (searchData.flights && searchData.flights[0]?.passengers) ||
+      1
+    );
+  };
+
+  const flights = getFlights();
+  const tripType = getTripType();
+  const passengerCount = getPassengerCount();
+
   return (
     <Card className="border border-[#D4AF37]/20 p-6 bg-white/95 backdrop-blur-sm sticky top-6">
       <p className="text-xl font-bold text-gray-900 mb-6 border-b pb-2">
@@ -63,11 +116,11 @@ export function FlightSummary({ formData, currentStep }: FlightSummaryProps) {
 
       {/* Flight Route */}
       <div className="space-y-2">
-        {searchData.tripType === "multi-leg" && searchData.flights ? (
+        {tripType === "multiLeg" && flights.length > 1 ? (
           // Multi-leg display
           <div className="space-y-4">
-            {searchData.flights.map((flight: any, index: number) => (
-              <div key={flight.id} className="space-y-3">
+            {flights.map((flight: any, index: number) => (
+              <div key={flight.id || index} className="space-y-3">
                 {/* From */}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
@@ -113,7 +166,21 @@ export function FlightSummary({ formData, currentStep }: FlightSummaryProps) {
                   </div>
                 </div>
 
-                {index < searchData.flights.length - 1 && (
+                {/* Flight Date */}
+                {flight.date && (
+                  <div className="flex items-center justify-between text-sm bg-gray-50 p-2 rounded">
+                    <div className="flex items-center gap-2 text-gray-700">
+                      <Calendar className="w-3 h-3" />
+                      <span>Date:</span>
+                    </div>
+                    <span className="font-medium">
+                      {formatDateForDisplay(flight.date)}
+                      {flight.time && ` at ${flight.time}`}
+                    </span>
+                  </div>
+                )}
+
+                {index < flights.length - 1 && (
                   <div className="border-t border-gray-200 pt-4">
                     <div className="text-center text-sm text-gray-500">
                       ↪ Next Leg
@@ -135,7 +202,7 @@ export function FlightSummary({ formData, currentStep }: FlightSummaryProps) {
                 <div>
                   <div className="font-semibold text-gray-900">Departure</div>
                   <div className="text-sm text-gray-600">
-                    {searchData.departureAirport || "Not selected"}
+                    {flights[0]?.from || "Not selected"}
                   </div>
                 </div>
               </div>
@@ -161,7 +228,7 @@ export function FlightSummary({ formData, currentStep }: FlightSummaryProps) {
                 <div>
                   <div className="font-semibold text-gray-900">Destination</div>
                   <div className="text-sm text-gray-600">
-                    {searchData.destinationAirport || "Not selected"}
+                    {flights[0]?.to || "Not selected"}
                   </div>
                 </div>
               </div>
@@ -171,14 +238,14 @@ export function FlightSummary({ formData, currentStep }: FlightSummaryProps) {
       </div>
 
       {/* Flight Details */}
-      <div className="space-y-1">
+      <div className="space-y-1 mt-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-gray-800">
             <Calendar className="w-4 h-4" />
             <p>Trip Type:</p>
           </div>
           <p className="font-medium capitalize">
-            {searchData.tripType?.replace("-", " ") || "One Way"}
+            {tripType?.replace("-", " ") || "One Way"}
           </p>
         </div>
 
@@ -187,40 +254,47 @@ export function FlightSummary({ formData, currentStep }: FlightSummaryProps) {
             <Users className="w-4 h-4" />
             <p>Passengers:</p>
           </div>
-          <p className="font-medium">{searchData.passengers || 1}</p>
+          <p className="font-medium">{passengerCount}</p>
         </div>
 
-        {searchData.departureDate && (
+        {flights[0]?.date && (
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-gray-800">
               <Clock className="w-4 h-4" />
               <p>Departure:</p>
             </div>
-            <p className="font-medium">{searchData.departureDate}</p>
+            <p className="font-medium text-sm">
+              {formatDateForDisplay(flights[0].date)}
+              {flights[0].time && ` at ${flights[0].time}`}
+            </p>
           </div>
         )}
 
-        {searchData.returnDate && (
+        {flights[0]?.returnDate && (
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-gray-800">
               <Clock className="w-4 h-4" />
               <p>Return:</p>
             </div>
-            <p className="font-medium">{searchData.returnDate}</p>
+            <p className="font-medium text-sm">
+              {formatDateForDisplay(flights[0].returnDate)}
+            </p>
           </div>
         )}
 
         {/* Price Range */}
         {ranges && (
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between pt-2 border-t border-gray-200">
             <div className="flex items-center gap-2 text-gray-800">
               <DollarSign className="w-4 h-4" />
               <p className="font-medium">Price Range:</p>
             </div>
-            <p className="">
+            <p className="font-semibold text-[#D4AF37]">
               {ranges.priceRange}
-              {searchData.tripType === "multi-leg" && searchData.flights && (
-                <p className="ml-1">({searchData.flights.length} legs)</p>
+              {tripType === "multiLeg" && flights.length > 1 && (
+                <span className="text-xs text-gray-500 ml-1">
+                  ({flights.length} legs)
+                </span>
               )}
             </p>
           </div>
@@ -231,7 +305,7 @@ export function FlightSummary({ formData, currentStep }: FlightSummaryProps) {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-gray-800">
               <Plane className="w-4 h-4" />
-              <p className="font-semibold">Flight Time:</p>
+              <p className="font-medium">Flight Time:</p>
             </div>
             <p className="font-medium">{ranges.timeRange}</p>
           </div>
@@ -240,17 +314,29 @@ export function FlightSummary({ formData, currentStep }: FlightSummaryProps) {
 
       {/* Selected Aircraft */}
       {selectedAircraft && selectedAircraft.length > 0 && (
-        <div className="">
-          <p className="font-semibold text-gray-800 ">
+        <div className="mt-4 pt-4 border-t border-gray-200">
+          <p className="font-semibold text-gray-800 mb-2">
             Selected Aircraft ({selectedAircraft.length})
           </p>
-          <div className="flex flex-col gap-1">
-            {selectedAircraft.map((aircraft: any) => (
+          <div className="flex flex-col gap-2">
+            {selectedAircraft.map((aircraft: any, index: number) => (
               <div
-                key={aircraft.id}
-                className=" text-sm font-medium text-gray-500"
+                key={aircraft.id || index}
+                className="text-sm bg-gray-50 p-2 rounded border"
               >
-                {aircraft.name}
+                <div className="font-medium text-gray-700">{aircraft.name}</div>
+                {aircraft.price && (
+                  <div className="text-xs text-gray-600 mt-1">
+                    Price:{" "}
+                    <span className="font-semibold">{aircraft.price}</span>
+                  </div>
+                )}
+                {aircraft.flightTime && (
+                  <div className="text-xs text-gray-600">
+                    Flight Time:{" "}
+                    <span className="font-semibold">{aircraft.flightTime}</span>
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -259,9 +345,9 @@ export function FlightSummary({ formData, currentStep }: FlightSummaryProps) {
 
       {/* Contact Information */}
       {contactInfo && (
-        <div className="p-2 bg-gray-50 border">
-          <p className="font-semibold text-gray-800">Contact Details</p>
-          <div className="space-y-2 text-sm">
+        <div className="mt-4 pt-4 border-t border-gray-200">
+          <p className="font-semibold text-gray-800 mb-2">Contact Details</p>
+          <div className="space-y-2 text-sm bg-gray-50 p-3 rounded border">
             <div className="flex justify-between">
               <span className="text-gray-600">Name:</span>
               <span className="font-medium">
@@ -295,7 +381,7 @@ export function FlightSummary({ formData, currentStep }: FlightSummaryProps) {
       )}
 
       {/* Progress Indicator */}
-      <div className="mt-2 pt-2 border-t border-dashed border-gray-200">
+      <div className="mt-4 pt-4 border-t border-dashed border-gray-200">
         <div className="flex justify-between items-center text-sm">
           <span className="text-gray-600">Current Step:</span>
           <span className="font-semibold text-gray-500">

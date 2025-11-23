@@ -35,6 +35,7 @@ export const emptyLegJets = [
   {
     id: "empty-1",
     name: "Citation XLS",
+    jetType: "light jets",
     image: image1,
     seats: 8,
     availableSeats: 3,
@@ -57,6 +58,7 @@ export const emptyLegJets = [
   {
     id: "empty-2",
     name: "Hawker 800XP",
+    jetType: "midsize jets",
     image: image1,
     seats: 8,
     availableSeats: 2,
@@ -79,6 +81,7 @@ export const emptyLegJets = [
   {
     id: "empty-3",
     name: "Challenger 300",
+    jetType: "heavy jets",
     image: image1,
     seats: 9,
     availableSeats: 1,
@@ -107,6 +110,7 @@ export const emptyLegJets = [
     {
       id: "empty-4",
       name: "Gulfstream G200",
+      jetType: "midsize jets",
       seats: 10,
       availableSeats: 4,
       luggage: "10 bags",
@@ -128,6 +132,7 @@ export const emptyLegJets = [
     {
       id: "empty-5",
       name: "Phenom 300",
+      jetType: "light jets",
       seats: 7,
       availableSeats: 2,
       luggage: "4 bags",
@@ -149,6 +154,7 @@ export const emptyLegJets = [
     {
       id: "empty-6",
       name: "Learjet 60XR",
+      jetType: "light jets",
       seats: 7,
       availableSeats: 1,
       luggage: "5 bags",
@@ -170,6 +176,7 @@ export const emptyLegJets = [
     {
       id: "empty-7",
       name: "Global 6000",
+      jetType: "ultra-long-range jets",
       seats: 14,
       availableSeats: 5,
       luggage: "15 bags",
@@ -191,6 +198,7 @@ export const emptyLegJets = [
     {
       id: "empty-8",
       name: "Cessna CJ3",
+      jetType: "light jets",
       seats: 6,
       availableSeats: 2,
       luggage: "4 bags",
@@ -212,6 +220,7 @@ export const emptyLegJets = [
     {
       id: "empty-9",
       name: "Legacy 450",
+      jetType: "midsize jets",
       seats: 9,
       availableSeats: 3,
       luggage: "8 bags",
@@ -233,6 +242,7 @@ export const emptyLegJets = [
     {
       id: "empty-10",
       name: "Falcon 2000LX",
+      jetType: "heavy jets",
       seats: 10,
       availableSeats: 4,
       luggage: "12 bags",
@@ -254,6 +264,7 @@ export const emptyLegJets = [
     {
       id: "empty-11",
       name: "King Air 350i",
+      jetType: "light jets",
       seats: 8,
       availableSeats: 3,
       luggage: "5 bags",
@@ -275,6 +286,7 @@ export const emptyLegJets = [
     {
       id: "empty-12",
       name: "Citation Mustang",
+      jetType: "light jets",
       seats: 4,
       availableSeats: 1,
       luggage: "2 bags",
@@ -296,6 +308,7 @@ export const emptyLegJets = [
     {
       id: "empty-13",
       name: "Pilatus PC-24",
+      jetType: "light jets",
       seats: 8,
       availableSeats: 3,
       luggage: "6 bags",
@@ -317,6 +330,7 @@ export const emptyLegJets = [
     {
       id: "empty-14",
       name: "HondaJet Elite",
+      jetType: "light jets",
       seats: 5,
       availableSeats: 1,
       luggage: "3 bags",
@@ -338,6 +352,7 @@ export const emptyLegJets = [
     {
       id: "empty-15",
       name: "Dassault Falcon 900EX",
+      jetType: "ultra-long-range jets",
       seats: 12,
       availableSeats: 4,
       luggage: "14 bags",
@@ -359,6 +374,7 @@ export const emptyLegJets = [
     {
       id: "empty-16",
       name: "Embraer Legacy 600",
+      jetType: "heavy jets",
       seats: 13,
       availableSeats: 5,
       luggage: "12 bags",
@@ -380,6 +396,7 @@ export const emptyLegJets = [
     {
       id: "empty-17",
       name: "Beechcraft Premier I",
+      jetType: "light jets",
       seats: 6,
       availableSeats: 2,
       luggage: "3 bags",
@@ -401,6 +418,7 @@ export const emptyLegJets = [
     {
       id: "empty-18",
       name: "Cessna Caravan EX",
+      jetType: "light jets",
       seats: 9,
       availableSeats: 4,
       luggage: "8 bags",
@@ -422,6 +440,7 @@ export const emptyLegJets = [
     {
       id: "empty-19",
       name: "Boeing BBJ (VIP)",
+      jetType: "ultra-long-range jets",
       seats: 25,
       availableSeats: 10,
       luggage: "25 bags",
@@ -443,6 +462,7 @@ export const emptyLegJets = [
     {
       id: "empty-20",
       name: "Cessna Citation Latitude",
+      jetType: "midsize jets",
       seats: 9,
       availableSeats: 3,
       luggage: "7 bags",

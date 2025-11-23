@@ -9,12 +9,12 @@ export const homeData = {
   },
 
   fleetPreview: {
-    title: "Our Fleet",
+    title: "Explore Our Aircraft",
     image:
       "https://images.unsplash.com/photo-1636189395447-0b8c1390b869?w=1920&q=80",
     description:
-      "Experience unparalleled luxury with our meticulously maintained fleet of premium aircraft. From light jets for quick getaways to ultra-long-range jets for intercontinental travel, we have the perfect aircraft for every journey.",
-    buttonText: "View Fleet",
+      "Discover our selection of modern, well-maintained aircraft designed to fit every type of journey. Whether you need a light jet for short trips or a long-range aircraft for international travel, our fleet offers comfort, reliability, and a premium aviation experience.",
+    buttonText: "View All Aircraft",
     buttonLink: "/aircrafts",
   },
 

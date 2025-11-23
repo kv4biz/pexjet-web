@@ -1,3 +1,4 @@
+// components/home/CharterSearch.tsx
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
@@ -7,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Calendar20 } from "../calendar-20";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 type TripType = "oneWay" | "roundTrip" | "multiLeg";
 
@@ -32,6 +34,7 @@ const airports = [
 ];
 
 export default function CharterSearch() {
+  const router = useRouter();
   const [tripType, setTripType] = useState<TripType>("oneWay");
   const [flights, setFlights] = useState<Flight[]>([
     {
@@ -110,7 +113,32 @@ export default function CharterSearch() {
       passengers,
       flights,
     };
+
     console.log("Charter Submit:", payload);
+
+    // Store the search data in sessionStorage
+    sessionStorage.setItem("charterSearchData", JSON.stringify(payload));
+
+    // Navigate to charter page
+    router.push("/charter");
+  };
+
+  // Handle Calendar20 changes
+  const handleDateChange = (
+    flightId: string,
+    field: "date" | "returnDate",
+    value: { date?: string | null; time?: string | null }
+  ) => {
+    const updates: Partial<Flight> = {};
+
+    if (field === "date") {
+      updates.date = value.date || null;
+      updates.time = value.time || null;
+    } else if (field === "returnDate") {
+      updates.returnDate = value.date || null;
+    }
+
+    updateFlight(flightId, updates);
   };
 
   return (
@@ -246,11 +274,21 @@ export default function CharterSearch() {
                   <div
                     className={tripType === "roundTrip" ? "flex-1" : "w-full"}
                   >
-                    <Calendar20 placeholder="Departure Date" />
+                    <Calendar20
+                      placeholder="Departure Date"
+                      onChange={(value) =>
+                        handleDateChange(flight.id, "date", value)
+                      }
+                    />
                   </div>
                   {tripType === "roundTrip" && (
                     <div className="flex-1">
-                      <Calendar20 placeholder="Return Date" />
+                      <Calendar20
+                        placeholder="Return Date"
+                        onChange={(value) =>
+                          handleDateChange(flight.id, "returnDate", value)
+                        }
+                      />
                     </div>
                   )}
                 </div>
@@ -314,16 +352,14 @@ export default function CharterSearch() {
         </div>
 
         {/* Action button */}
-        <Link href={"/charter"} className="mt-2">
-          <Button
-            variant={"outline"}
-            onClick={handleSubmit}
-            className="w-full bg-[#D4AF37] text-[#0C0C0C]"
-          >
-            <Search className="w-4 h-4 mr-2" />
-            Request Quote
-          </Button>
-        </Link>
+        <Button
+          variant={"outline"}
+          onClick={handleSubmit}
+          className="w-full mt-2 bg-[#D4AF37] text-[#0C0C0C]"
+        >
+          <Search className="w-4 h-4 mr-2" />
+          Request Quote
+        </Button>
       </div>
     </Card>
   );

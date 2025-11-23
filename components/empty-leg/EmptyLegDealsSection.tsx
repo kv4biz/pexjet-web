@@ -19,6 +19,7 @@ import {
   Shield,
   Filter,
   SortAsc,
+  Info,
 } from "lucide-react";
 import { emptyLegJets } from "../../data";
 import { LoadingAnimation } from "../empty-leg/LoadingAnimation";
@@ -37,33 +38,73 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "../ui/hover-card";
 
 export function EmptyLegDealsSection() {
   const [selectedDeal, setSelectedDeal] = useState<any>(null);
   const [showAllDeals, setShowAllDeals] = useState(false);
   const [searchPerformed, setSearchPerformed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [showDeals, setShowDeals] = useState(true); // Changed to true to show deals initially
+  const [showDeals, setShowDeals] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [sortBy, setSortBy] = useState("best-discount");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [searchData, setSearchData] = useState<any>(null);
   const dealsPerPage = 10;
 
-  // Listen for search form submission
+  // Check for stored search data on component mount
   useEffect(() => {
-    const handleSearchSubmitted = () => {
+    const storedSearchData = sessionStorage.getItem("emptyLegSearchData");
+
+    if (storedSearchData) {
+      try {
+        const data = JSON.parse(storedSearchData);
+        setSearchData(data);
+        setSearchPerformed(true);
+        setIsLoading(true);
+        setShowDeals(false);
+        setCurrentPage(1);
+
+        // Clear the stored data so it doesn't trigger again on refresh
+        sessionStorage.removeItem("emptyLegSearchData");
+
+        // Show loading animation for 7.5 seconds, then show deals
+        setTimeout(() => {
+          setIsLoading(false);
+          setShowDeals(true);
+          setShowAllDeals(true);
+
+          // Scroll to deals section
+          setTimeout(() => {
+            const element = document.getElementById("empty-leg-deals-section");
+            element?.scrollIntoView({ behavior: "smooth", block: "start" });
+          }, 100);
+        }, 7500);
+      } catch (error) {
+        console.error("Error parsing stored empty leg search data:", error);
+      }
+    }
+  }, []);
+
+  // Keep the existing event listener for backward compatibility
+  useEffect(() => {
+    const handleSearchSubmitted = (event: CustomEvent) => {
+      const data = event.detail;
+      setSearchData(data);
       setSearchPerformed(true);
       setIsLoading(true);
       setShowDeals(false);
       setCurrentPage(1);
 
-      // Show loading animation for 7.5 seconds, then show deals
       setTimeout(() => {
         setIsLoading(false);
         setShowDeals(true);
         setShowAllDeals(true);
 
-        // Scroll to deals section
         setTimeout(() => {
           const element = document.getElementById("empty-leg-deals-section");
           element?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -95,11 +136,11 @@ export function EmptyLegDealsSection() {
     window.dispatchEvent(event);
   };
 
-  // Filter and sort deals
+  // Filter and sort deals - REMOVED search-based filtering
   const getFilteredAndSortedDeals = () => {
     let filteredDeals = [...emptyLegJets];
 
-    // Filter by status
+    // Only apply status filter, no search-based filtering
     if (statusFilter !== "all") {
       filteredDeals = filteredDeals.filter((deal) => {
         const availableSeats = deal.availableSeats;
@@ -193,27 +234,114 @@ export function EmptyLegDealsSection() {
     return (
       <Card className="p-2 border md:border-r-8 border-gray-200 hover:border-[#D4AF37] transition-all cursor-pointer h-full">
         <div className="flex flex-col md:flex-row h-full gap-2">
-          {/* Deal Image */}
+          {/* Deal Image with Hover Card */}
           <div className="relative">
-            <img
-              src={deal.image}
-              alt={deal.name}
-              className="w-full md:w-48 h-48 object-cover"
-            />
-            <div className="absolute top-2 left-2 bg-red-400 text-white px-2 py-1 text-sm font-semibold">
+            <HoverCard>
+              <HoverCardTrigger asChild>
+                <div className="relative cursor-help group">
+                  <img
+                    src={deal.image}
+                    alt={deal.name}
+                    className="w-full md:w-48 h-48 object-cover "
+                  />
+                  {/* Translucent info icon overlay */}
+                  <div className="absolute bottom-2 right-2 bg-black/50 backdrop-blur-sm rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                    <Info className="w-4 h-4 text-white" />
+                  </div>
+                </div>
+              </HoverCardTrigger>
+              <HoverCardContent className="w-80 bg-white/95 backdrop-blur-sm border border-[#D4AF37]/40 shadow-xl">
+                <div className="space-y-3">
+                  {/* Aircraft Header */}
+                  <div className="flex items-start">
+                    <div>
+                      <h4 className="font-bold text-lg text-gray-900">
+                        {deal.name}
+                      </h4>
+                      <p className="text-sm text-gray-600 capitalize">
+                        {deal.jetType}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Description */}
+                  <p className="text-sm text-gray-700 leading-relaxed">
+                    {deal.description}
+                  </p>
+
+                  {/* Specifications Grid */}
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div className="flex items-center gap-2">
+                      <Users className="w-4 h-4 text-[#D4AF37]" />
+                      <div>
+                        <div className="font-semibold text-gray-900">
+                          {deal.seats} seats
+                        </div>
+                        <div className="text-xs text-gray-500">Capacity</div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <Package className="w-4 h-4 text-[#D4AF37]" />
+                      <div>
+                        <div className="font-semibold text-gray-900">
+                          {deal.luggage}
+                        </div>
+                        <div className="text-xs text-gray-500">Luggage</div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <Gauge className="w-4 h-4 text-[#D4AF37]" />
+                      <div>
+                        <div className="font-semibold text-gray-900">
+                          {deal.speed}
+                        </div>
+                        <div className="text-xs text-gray-500">Speed</div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-[#D4AF37]" />
+                      <div>
+                        <div className="font-semibold text-gray-900">
+                          {deal.range}
+                        </div>
+                        <div className="text-xs text-gray-500">Range</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Cabin Dimensions */}
+                  <div className="bg-gray-50 p-3 ">
+                    <h5 className="font-semibold text-gray-900 text-sm mb-2">
+                      Cabin Dimensions
+                    </h5>
+                    <div className="flex justify-between text-xs">
+                      <div className="text-center">
+                        <div className="font-medium text-gray-900">Height</div>
+                        <div className="text-gray-600">{deal.cabinHeight}</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="font-medium text-gray-900">Width</div>
+                        <div className="text-gray-600">{deal.cabinWidth}</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </HoverCardContent>
+            </HoverCard>
+
+            {/* Discount Badge */}
+            <div className="absolute top-2 left-2 bg-red-500 text-white px-2 py-1 text-sm font-semibold">
               {deal.discount}
             </div>
-            {/* <div
-              className={`absolute top-2 right-2 ${status.color} text-white px-2 py-1 rounded text-sm font-semibold`}
-            >
-              {status.text}
-            </div> */}
           </div>
 
           {/* Deal Details */}
-          <div className="flex-1 space-y-2">
+          <div className="flex-1 w-full space-y-2">
             {/* Flight Route */}
-            <div className="bg-gray-50 p-3 rounded-lg">
+            <div className="bg-gray-50 p-3 ">
               <div className="flex items-center justify-between text-sm">
                 <div className="text-center flex-1">
                   <div className="font-semibold text-gray-900">Departure</div>
@@ -235,7 +363,7 @@ export function EmptyLegDealsSection() {
             </div>
 
             {/* Specifications Grid */}
-            <div className="grid grid-cols-3 gap-3 text-sm">
+            <div className="flex gap-3 text-sm justify-between mx-5 md:mx-20">
               <div className="flex items-center gap-2">
                 <Users className="w-4 h-4 text-gray-500" />
                 <div>
@@ -330,6 +458,11 @@ export function EmptyLegDealsSection() {
         {/* Results Count */}
         <div className="text-sm text-gray-600">
           Showing {filteredAndSortedDeals.length} deals
+          {searchPerformed && searchData && (
+            <span className="text-xs text-gray-500 ml-2">
+              (showing all available deals)
+            </span>
+          )}
         </div>
       </div>
     </div>
@@ -382,7 +515,7 @@ export function EmptyLegDealsSection() {
           </div>
         </div>
 
-        <div className="bg-[#D4AF37]/10 border border-[#D4AF37]/20 rounded-lg p-4">
+        <div className="bg-[#D4AF37]/10 border border-[#D4AF37]/20  p-4">
           <h4 className="font-semibold text-gray-900 mb-2">How It Works</h4>
           <ol className="text-sm text-gray-600 space-y-2">
             <li className="flex items-start gap-2">
@@ -431,19 +564,14 @@ export function EmptyLegDealsSection() {
             Available Empty Leg Deals
           </h2>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            {searchPerformed
-              ? "We found these amazing empty leg deals for your route"
+            {searchPerformed && searchData
+              ? `Showing all available empty leg deals (${filteredAndSortedDeals.length} total)`
               : "Discover incredible savings on pre-positioned private jets"}
           </p>
         </div>
 
         {/* Explanation ALWAYS Visible */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          {/* Always visible left column */}
-          <div className="lg:col-span-1">
-            <EmptyLegExplanation />
-          </div>
-
           {/* Right Column - Everything else */}
           <div className="lg:col-span-3">
             {/* Loading Animation */}
@@ -521,15 +649,16 @@ export function EmptyLegDealsSection() {
               </div>
             )}
 
-            {/* No Results Message */}
+            {/* No Results Message - This should rarely show now since we show all deals */}
             {!isLoading && showDeals && filteredAndSortedDeals.length === 0 && (
-              <div className="text-center p-8 bg-white rounded-lg border border-gray-200">
+              <div className="text-center p-8 bg-white  border border-gray-200">
                 <Filter className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                  No Deals Found
+                  No Deals Available
                 </h3>
                 <p className="text-gray-600 mb-4">
-                  Try adjusting your filters to see more results
+                  There are currently no empty leg deals matching your status
+                  filter.
                 </p>
                 <Button
                   onClick={() => {
@@ -545,7 +674,7 @@ export function EmptyLegDealsSection() {
 
             {/* Search Prompt (only show when no search & no loading & initial state) */}
             {!searchPerformed && !isLoading && !showDeals && (
-              <div className="text-center mt-12 p-8 bg-white rounded-lg border border-gray-200">
+              <div className="text-center mt-12 p-8 bg-white  border border-gray-200">
                 <MapPin className="w-12 h-12 text-[#D4AF37] mx-auto mb-4" />
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">
                   Looking for Specific Routes?
@@ -557,6 +686,10 @@ export function EmptyLegDealsSection() {
               </div>
             )}
           </div>
+          {/* Always visible left column */}
+          <div className="lg:col-span-1">
+            <EmptyLegExplanation />
+          </div>
         </div>
 
         {/* Show More/Less Button - Only show when not in search mode */}
@@ -565,7 +698,7 @@ export function EmptyLegDealsSection() {
             <Button
               variant="outline"
               onClick={() => setShowAllDeals(!showAllDeals)}
-              className="border-[#D4AF37] text-[#D4AF37] hover:bg-[#D4AF37] hover:text-white"
+              className="bg-[#D4AF37]"
             >
               {showAllDeals ? "Show Less Deals" : "View All Empty Leg Deals"}
             </Button>

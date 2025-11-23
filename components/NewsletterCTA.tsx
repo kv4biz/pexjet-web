@@ -38,7 +38,7 @@ export default function NewsletterCTA() {
             <Button
               onClick={handleJoinClick}
               variant={"outline"}
-              className="py-2 px-4 bg-[#D4AF37]"
+              className="py-2 px-4 bg-[#D4AF37] border-0"
             >
               {homeData.newsletter.buttonText}
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
