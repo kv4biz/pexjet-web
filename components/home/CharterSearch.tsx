@@ -7,7 +7,6 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Calendar20 } from "../calendar-20";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 type TripType = "oneWay" | "roundTrip" | "multiLeg";
@@ -19,6 +18,7 @@ interface Flight {
   date?: string | null;
   returnDate?: string | null;
   time?: string | null;
+  returnTime?: string | null; // ADDED: Separate return time
   passengers?: number;
 }
 
@@ -44,6 +44,7 @@ export default function CharterSearch() {
       date: null,
       returnDate: null,
       time: null,
+      returnTime: null, // ADDED: Initialize return time
       passengers: 1,
     },
   ]);
@@ -62,6 +63,7 @@ export default function CharterSearch() {
         date: null,
         returnDate: null,
         time: null,
+        returnTime: null, // ADDED: Initialize return time
         passengers: passengers,
       },
     ]);
@@ -123,7 +125,7 @@ export default function CharterSearch() {
     router.push("/charter");
   };
 
-  // Handle Calendar20 changes
+  // Handle Calendar20 changes - UPDATED for return time
   const handleDateChange = (
     flightId: string,
     field: "date" | "returnDate",
@@ -136,6 +138,7 @@ export default function CharterSearch() {
       updates.time = value.time || null;
     } else if (field === "returnDate") {
       updates.returnDate = value.date || null;
+      updates.returnTime = value.time || null; // ADDED: Store return time
     }
 
     updateFlight(flightId, updates);
@@ -269,13 +272,23 @@ export default function CharterSearch() {
 
                 {/* Line 2: Dates */}
                 <div
-                  className={`flex ${tripType === "roundTrip" ? "" : "flex-1"}`}
+                  className={`flex gap-2 ${
+                    tripType === "roundTrip" ? "flex-col md:flex-row" : ""
+                  }`}
                 >
                   <div
                     className={tripType === "roundTrip" ? "flex-1" : "w-full"}
                   >
                     <Calendar20
-                      placeholder="Departure Date"
+                      placeholder="Departure Date & Time"
+                      value={
+                        flight.date
+                          ? {
+                              date: flight.date,
+                              time: flight.time || undefined,
+                            }
+                          : undefined
+                      }
                       onChange={(value) =>
                         handleDateChange(flight.id, "date", value)
                       }
@@ -284,7 +297,15 @@ export default function CharterSearch() {
                   {tripType === "roundTrip" && (
                     <div className="flex-1">
                       <Calendar20
-                        placeholder="Return Date"
+                        placeholder="Return Date & Time"
+                        value={
+                          flight.returnDate
+                            ? {
+                                date: flight.returnDate,
+                                time: flight.returnTime || undefined, // UPDATED: Include return time
+                              }
+                            : undefined
+                        }
                         onChange={(value) =>
                           handleDateChange(flight.id, "returnDate", value)
                         }
@@ -294,7 +315,7 @@ export default function CharterSearch() {
                 </div>
 
                 {/* Line 3: Passengers */}
-                <div className="flex w-full items-center ">
+                <div className="flex w-full items-center">
                   <div className="flex w-full justify-between items-center px-3 py-1 bg-white border border-gray-300">
                     <Users className="w-4 h-4 text-gray-500" />
                     <div className="flex gap-2">
@@ -329,7 +350,7 @@ export default function CharterSearch() {
                     <Button
                       variant="destructive"
                       onClick={() => removeFlight(flight.id)}
-                      className="bg-white text-red-600 border border-red-200"
+                      className="bg-white text-red-600 border border-red-200 ml-2"
                     >
                       Remove
                     </Button>
@@ -358,7 +379,7 @@ export default function CharterSearch() {
           className="w-full mt-2 bg-[#D4AF37] text-[#0C0C0C]"
         >
           <Search className="w-4 h-4 mr-2" />
-          Request Quote
+          Search Flights
         </Button>
       </div>
     </Card>

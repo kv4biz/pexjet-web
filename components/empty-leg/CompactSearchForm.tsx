@@ -2,7 +2,14 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { MapPin, ArrowLeftRight, Users, Search } from "lucide-react";
+import {
+  MapPin,
+  ArrowLeftRight,
+  Users,
+  Minus,
+  Plus,
+  Search,
+} from "lucide-react";
 import { Button } from "../ui/button";
 import { Card } from "../ui/card";
 import { Input } from "../ui/input";
@@ -26,10 +33,33 @@ interface CompactSearchFormProps {
 export function CompactSearchForm({ onSearch }: CompactSearchFormProps) {
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
-  const [passengers, setPassengers] = useState(4);
+  const [passengers, setPassengers] = useState(1);
+  const [date, setDate] = useState<string | null>(null);
+  const [time, setTime] = useState<string | null>(null);
   const [openFrom, setOpenFrom] = useState(false);
   const [openTo, setOpenTo] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
+
+  // Load search data from sessionStorage on component mount
+  useEffect(() => {
+    const storedSearchData = sessionStorage.getItem("emptyLegSearchData");
+
+    if (storedSearchData) {
+      try {
+        const searchData = JSON.parse(storedSearchData);
+
+        if (searchData.from) setFrom(searchData.from);
+        if (searchData.to) setTo(searchData.to);
+        if (searchData.passengers) setPassengers(searchData.passengers);
+        if (searchData.date) setDate(searchData.date);
+        if (searchData.time) setTime(searchData.time);
+
+        sessionStorage.removeItem("emptyLegSearchData");
+      } catch (error) {
+        console.error("Error parsing stored search data:", error);
+      }
+    }
+  }, []);
 
   useEffect(() => {
     const onDocClick = (e: MouseEvent) => {
@@ -59,16 +89,40 @@ export function CompactSearchForm({ onSearch }: CompactSearchFormProps) {
     setTo(from);
   };
 
+  const handleDateChange = (value: {
+    date?: string | null;
+    time?: string | null;
+  }) => {
+    setDate(value.date || null);
+    setTime(value.time || null);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Store search data in sessionStorage before navigation
     const searchData = {
+      type: "emptyLeg",
+      from,
+      to,
+      passengers,
+      date,
+      time,
+    };
+
+    console.log("Storing empty leg search data:", searchData);
+    sessionStorage.setItem("emptyLegSearchData", JSON.stringify(searchData));
+
+    // Call the onSearch prop with the formatted data
+    const formattedData = {
       departureAirport: from,
       destinationAirport: to,
+      departureDate: date || "",
+      departureTime: time || "",
       passengers,
     };
 
-    onSearch(searchData);
+    onSearch(formattedData);
   };
 
   return (
@@ -82,116 +136,130 @@ export function CompactSearchForm({ onSearch }: CompactSearchFormProps) {
         </p>
 
         <form onSubmit={handleSubmit}>
-          <div
-            className="flex flex-col lg:flex-row space-y-2 w-full"
-            ref={containerRef}
-          >
-            {/* Line 1: From + Swap + To */}
-            <div className="flex w-full lg:w-2/4">
-              {/* FROM */}
-              <div className="relative flex-1">
-                <Input
-                  placeholder="From"
-                  value={from}
-                  onChange={(e) => setFrom(e.target.value)}
-                  onFocus={() => setOpenFrom(true)}
-                  className="bg-white text-black border-gray-300"
-                />
-                <MapPin className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
-                {openFrom && (
-                  <div className="absolute z-40 left-0 right-0 mt-2 bg-white border border-gray-200 shadow-sm rounded-md max-h-56 overflow-y-auto">
-                    {filterAirports(from).map((a) => (
-                      <button
-                        key={a.code}
-                        type="button"
-                        onMouseDown={() => setFrom(`${a.code} - ${a.city}`)}
-                        className="w-full text-left px-4 py-3 hover:bg-gray-50 transition flex items-center gap-3"
-                      >
-                        <span className="text-2xl">{a.flag}</span>
-                        <div className="text-sm text-black">
-                          <div className="font-medium text-black">{a.code}</div>
-                          <div className="text-xs text-gray-500">
-                            {a.city}, {a.country}
+          <div className="space-y-1" ref={containerRef}>
+            <div className="flex flex-col lg:flex-row lg:items-start">
+              {/* Location inputs */}
+              <div className="flex flex-1 min-w-0">
+                {/* FROM */}
+                <div className="relative flex-1 min-w-0">
+                  <Input
+                    placeholder="From"
+                    value={from}
+                    onChange={(e) => setFrom(e.target.value)}
+                    onFocus={() => setOpenFrom(true)}
+                    className="bg-white text-black border-gray-300 w-full"
+                  />
+                  <MapPin className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
+                  {openFrom && (
+                    <div className="absolute z-40 left-0 right-0 mt-2 bg-white border border-gray-200 shadow-sm max-h-56 overflow-y-auto">
+                      {filterAirports(from).map((a) => (
+                        <button
+                          key={a.code}
+                          type="button"
+                          onMouseDown={() => setFrom(`${a.code} - ${a.city}`)}
+                          className="w-full text-left px-4 py-3 hover:bg-gray-50 transition flex items-center gap-3"
+                        >
+                          <span className="text-2xl">{a.flag}</span>
+                          <div className="text-sm text-black">
+                            <div className="font-medium text-black">
+                              {a.code}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {a.city}, {a.country}
+                            </div>
                           </div>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
 
-              {/* Swap Button */}
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={swapLocations}
-                className="p-2 border border-gray-200 bg-white text-black hover:bg-gray-50"
-              >
-                <ArrowLeftRight className="w-5 h-5" />
-              </Button>
+                {/* Swap Button */}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={swapLocations}
+                  className="p-2 border border-gray-200 bg-white text-black hover:bg-gray-50 shrink-0"
+                >
+                  <ArrowLeftRight className="w-5 h-5" />
+                </Button>
 
-              {/* TO */}
-              <div className="relative flex-1">
-                <Input
-                  placeholder="To"
-                  value={to}
-                  onChange={(e) => setTo(e.target.value)}
-                  onFocus={() => setOpenTo(true)}
-                  className="bg-white text-black border-gray-300"
-                />
-                <MapPin className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
-                {openTo && (
-                  <div className="absolute z-40 left-0 right-0 mt-2 bg-white border border-gray-200 shadow-sm rounded-md max-h-56 overflow-y-auto">
-                    {filterAirports(to).map((a) => (
-                      <button
-                        key={a.code}
-                        type="button"
-                        onMouseDown={() => setTo(`${a.code} - ${a.city}`)}
-                        className="w-full text-left px-4 py-3 hover:bg-gray-50 transition flex items-center gap-3"
-                      >
-                        <span className="text-2xl">{a.flag}</span>
-                        <div className="text-sm text-black">
-                          <div className="font-medium text-black">{a.code}</div>
-                          <div className="text-xs text-gray-500">
-                            {a.city}, {a.country}
+                {/* TO */}
+                <div className="relative flex-1 min-w-0">
+                  <Input
+                    placeholder="To"
+                    value={to}
+                    onChange={(e) => setTo(e.target.value)}
+                    onFocus={() => setOpenTo(true)}
+                    className="bg-white text-black border-gray-300 w-full"
+                  />
+                  <MapPin className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
+                  {openTo && (
+                    <div className="absolute z-40 left-0 right-0 mt-2 bg-white border border-gray-200 shadow-sm max-h-56 overflow-y-auto">
+                      {filterAirports(to).map((a) => (
+                        <button
+                          key={a.code}
+                          type="button"
+                          onMouseDown={() => setTo(`${a.code} - ${a.city}`)}
+                          className="w-full text-left px-4 py-3 hover:bg-gray-50 transition flex items-center gap-3"
+                        >
+                          <span className="text-2xl">{a.flag}</span>
+                          <div className="text-sm text-black">
+                            <div className="font-medium text-black">
+                              {a.code}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {a.city}, {a.country}
+                            </div>
                           </div>
-                        </div>
-                      </button>
-                    ))}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Date input */}
+              <div className="flex min-w-0 flex-1">
+                <div className="w-full">
+                  <Calendar20
+                    placeholder="Departure Date & Time"
+                    value={
+                      date
+                        ? {
+                            date: date,
+                            time: time || undefined,
+                          }
+                        : undefined
+                    }
+                    onChange={handleDateChange}
+                  />
+                </div>
+              </div>
+
+              {/* Passengers */}
+              <div className="flex gap-2 items-center lg:w-auto">
+                <div className="flex items-center px-3 pt-1 pb-0.5 bg-white border border-gray-300 min-w-[120px] justify-between">
+                  <Users className="w-4 h-4 text-gray-500 shrink-0" />
+                  <div className="flex gap-2 items-center ml-2">
+                    <button
+                      type="button"
+                      onClick={() => setPassengers(Math.max(1, passengers - 1))}
+                      className="w-7 h-7 inline-flex items-center justify-center border border-gray-300 text-black shrink-0"
+                    >
+                      <Minus className="w-3 h-3" />
+                    </button>
+                    <span className="w-6 text-center text-black text-sm">
+                      {passengers}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setPassengers(passengers + 1)}
+                      className="w-7 h-7 inline-flex items-center justify-center border border-gray-300 text-black shrink-0"
+                    >
+                      <Plus className="w-3 h-3" />
+                    </button>
                   </div>
-                )}
-              </div>
-            </div>
-
-            {/* Line 2: Date */}
-            <div className="flex w-full lg:w-1/4">
-              <div className="w-full">
-                <Calendar20 placeholder="Departure Date" />
-              </div>
-            </div>
-
-            {/* Line 3: Passengers */}
-            <div className="flex w-full lg:w-1/4 items-center">
-              <div className="flex w-full justify-between items-center px-3 py-1 lg:-mt-2 bg-white border border-gray-300">
-                <Users className="w-4 h-4 text-gray-500" />
-                <div className="flex gap-2 items-center">
-                  <button
-                    type="button"
-                    onClick={() => setPassengers(Math.max(1, passengers - 1))}
-                    className="w-7 h-7 inline-flex items-center justify-center border border-gray-300 text-black rounded"
-                  >
-                    −
-                  </button>
-                  <span className="w-6 text-center text-black">
-                    {passengers}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setPassengers(passengers + 1)}
-                    className="w-7 h-7 inline-flex items-center justify-center border border-gray-300 text-black rounded"
-                  >
-                    +
-                  </button>
                 </div>
               </div>
             </div>

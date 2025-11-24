@@ -89,9 +89,13 @@ export default function EmptyLegSearch() {
 
   return (
     <Card className="border border-[#D4AF37]/20 p-2 md:p-6 lg:shadow-xl lg:bg-black/50 h-full">
-      <div className="p-0 md:p-6 bg-white h-full">
-        <p className="text-xl font-bold mb-6 text-black uppercase tracking-wide">
+      <div className="p-2 md:p-6 bg-white h-full">
+        <p className="text-xl font-bold mb-2 text-black uppercase tracking-wide">
           Empty Leg Flights
+        </p>
+
+        <p className="text-sm text-gray-600 mb-4">
+          Significant savings on pre-positioned aircraft
         </p>
 
         <div className="space-y-2" ref={containerRef}>
@@ -173,7 +177,15 @@ export default function EmptyLegSearch() {
           <div className="flex gap-2">
             <div className="w-full">
               <Calendar20
-                placeholder="Departure Date"
+                placeholder="Departure Date & Time"
+                value={
+                  date
+                    ? {
+                        date: date,
+                        time: time || undefined,
+                      }
+                    : undefined
+                }
                 onChange={handleDateChange}
               />
             </div>
@@ -206,10 +218,10 @@ export default function EmptyLegSearch() {
         <Button
           variant={"outline"}
           onClick={handleSubmit}
-          className="w-full mt-6 bg-[#D4AF37] text-[#0C0C0C]"
+          className="w-full mt-2 bg-[#D4AF37] text-[#0C0C0C]"
         >
           <Search className="w-4 h-4 mr-2" />
-          Search Flights
+          Search Empty Legs
         </Button>
       </div>
     </Card>

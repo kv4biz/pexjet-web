@@ -37,6 +37,7 @@ interface Flight {
   date?: string | null;
   returnDate?: string | null;
   time?: string | null;
+  returnTime?: string | null;
   passengers?: number;
 }
 
@@ -52,13 +53,62 @@ export function CompactSearchForm({ onSearch }: CompactSearchFormProps) {
       date: null,
       returnDate: null,
       time: null,
+      returnTime: null,
       passengers: 1,
     },
   ]);
-  const [passengers, setPassengers] = useState(4);
+  const [passengers, setPassengers] = useState(1);
   const [openFrom, setOpenFrom] = useState<string | null>(null);
   const [openTo, setOpenTo] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
+
+  // Load search data from sessionStorage on component mount
+  useEffect(() => {
+    const storedSearchData = sessionStorage.getItem("charterSearchData");
+
+    if (storedSearchData) {
+      try {
+        const searchData = JSON.parse(storedSearchData);
+
+        if (searchData.tripType) {
+          const tripTypeMap: Record<
+            string,
+            "one-way" | "round-trip" | "multi-leg"
+          > = {
+            oneWay: "one-way",
+            roundTrip: "round-trip",
+            multiLeg: "multi-leg",
+          };
+          setTripType(tripTypeMap[searchData.tripType] || "one-way");
+        }
+
+        if (searchData.passengers) {
+          setPassengers(searchData.passengers);
+        }
+
+        if (searchData.flights && searchData.flights.length > 0) {
+          const updatedFlights = searchData.flights.map(
+            (flight: any, index: number) => ({
+              id: flight.id || `flight-${index + 1}`,
+              from: flight.from || "",
+              to: flight.to || "",
+              date: flight.date || null,
+              returnDate: flight.returnDate || null,
+              time: flight.time || null,
+              returnTime: flight.returnTime || null,
+              passengers: flight.passengers || searchData.passengers || 1,
+            })
+          );
+
+          setFlights(updatedFlights);
+        }
+
+        sessionStorage.removeItem("charterSearchData");
+      } catch (error) {
+        console.error("Error parsing stored search data:", error);
+      }
+    }
+  }, []);
 
   const addFlight = () => {
     setFlights((prev) => [
@@ -70,6 +120,7 @@ export function CompactSearchForm({ onSearch }: CompactSearchFormProps) {
         date: null,
         returnDate: null,
         time: null,
+        returnTime: null,
         passengers: passengers,
       },
     ]);
@@ -91,7 +142,6 @@ export function CompactSearchForm({ onSearch }: CompactSearchFormProps) {
     );
   };
 
-  // Handle Calendar20 changes
   const handleDateChange = (
     flightId: string,
     field: "date" | "returnDate",
@@ -104,7 +154,7 @@ export function CompactSearchForm({ onSearch }: CompactSearchFormProps) {
       updates.time = value.time || null;
     } else if (field === "returnDate") {
       updates.returnDate = value.date || null;
-      // You might want to store return time separately if needed
+      updates.returnTime = value.time || null;
     }
 
     updateFlight(flightId, updates);
@@ -136,21 +186,37 @@ export function CompactSearchForm({ onSearch }: CompactSearchFormProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Prepare data for onSearch callback
-    const mainFlight = flights[0];
+    // Store search data in sessionStorage before navigation
     const searchData = {
+      type: "charter",
+      tripType:
+        tripType === "one-way"
+          ? "oneWay"
+          : tripType === "round-trip"
+          ? "roundTrip"
+          : "multiLeg",
+      passengers,
+      flights: tripType === "multi-leg" ? flights : [flights[0]],
+    };
+
+    console.log("Storing search data:", searchData);
+    sessionStorage.setItem("charterSearchData", JSON.stringify(searchData));
+
+    // Call the onSearch prop with the formatted data
+    const mainFlight = flights[0];
+    const formattedData = {
       departureAirport: mainFlight.from,
       destinationAirport: mainFlight.to,
       departureDate: mainFlight.date || "",
       departureTime: mainFlight.time || "",
       returnDate: mainFlight.returnDate || "",
-      returnTime: "", // Calendar20 doesn't have separate return time
-      tripType,
+      returnTime: mainFlight.returnTime || "",
+      tripType: searchData.tripType,
       passengers,
-      flights, // Include the flights array for multi-leg support
+      flights: searchData.flights,
     };
 
-    onSearch(searchData);
+    onSearch(formattedData);
   };
 
   return (
@@ -186,17 +252,17 @@ export function CompactSearchForm({ onSearch }: CompactSearchFormProps) {
 
         <form onSubmit={handleSubmit}>
           {/* Flight rows */}
-          <div className="space-y-2" ref={containerRef}>
+          <div className="space-y-1" ref={containerRef}>
             {(tripType === "multi-leg" ? flights : [flights[0]]).map(
               (flight, idx) => (
                 <div
                   key={flight.id}
-                  className="lg:flex-row flex flex-col  lg:justify-center space-y-2"
+                  className="flex flex-col lg:flex-row lg:items-start"
                 >
-                  {/* Line 1: From + Swap + To */}
-                  <div className="flex">
+                  {/* Location inputs - Fixed width */}
+                  <div className="flex flex-1 min-w-0 ">
                     {/* FROM */}
-                    <div className="relative flex-1">
+                    <div className="relative flex-1 min-w-0">
                       <Input
                         placeholder="From"
                         value={flight.from}
@@ -204,11 +270,11 @@ export function CompactSearchForm({ onSearch }: CompactSearchFormProps) {
                           updateFlight(flight.id, { from: e.target.value })
                         }
                         onFocus={() => setOpenFrom(flight.id)}
-                        className="bg-white text-black border-gray-300"
+                        className="bg-white text-black border-gray-300 w-full"
                       />
                       <MapPin className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
                       {openFrom === flight.id && (
-                        <div className="absolute z-40 left-0 right-0 mt-2 bg-white border border-gray-200 shadow-sm rounded-md max-h-56 overflow-y-auto">
+                        <div className="absolute z-40 left-0 right-0 mt-2 bg-white border border-gray-200 shadow-sm  max-h-56 overflow-y-auto">
                           {filterAirports(flight.from).map((a) => (
                             <button
                               key={a.code}
@@ -240,13 +306,13 @@ export function CompactSearchForm({ onSearch }: CompactSearchFormProps) {
                       type="button"
                       variant="ghost"
                       onClick={() => swapLocations(flight.id)}
-                      className="p-2 border border-gray-200 bg-white text-black hover:bg-gray-50"
+                      className="p-2 border border-gray-200 bg-white text-black hover:bg-gray-50 shrink-0"
                     >
                       <ArrowLeftRight className="w-5 h-5" />
                     </Button>
 
                     {/* TO */}
-                    <div className="relative flex-1">
+                    <div className="relative flex-1 min-w-0">
                       <Input
                         placeholder="To"
                         value={flight.to}
@@ -254,11 +320,11 @@ export function CompactSearchForm({ onSearch }: CompactSearchFormProps) {
                           updateFlight(flight.id, { to: e.target.value })
                         }
                         onFocus={() => setOpenTo(flight.id)}
-                        className="bg-white text-black border-gray-300"
+                        className="bg-white text-black border-gray-300 w-full"
                       />
                       <MapPin className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
                       {openTo === flight.id && (
-                        <div className="absolute z-40 left-0 right-0 mt-2 bg-white border border-gray-200 shadow-sm rounded-md max-h-56 overflow-y-auto">
+                        <div className="absolute z-40 left-0 right-0 mt-2 bg-white border border-gray-200 shadow-sm  max-h-56 overflow-y-auto">
                           {filterAirports(flight.to).map((a) => (
                             <button
                               key={a.code}
@@ -286,19 +352,29 @@ export function CompactSearchForm({ onSearch }: CompactSearchFormProps) {
                     </div>
                   </div>
 
-                  {/* Line 2: Dates - Using Calendar20 component */}
+                  {/* Date inputs - Fixed consistent width */}
                   <div
-                    className={`flex ${
-                      tripType === "round-trip" ? "" : "flex-1"
+                    className={`flex min-w-0 ${
+                      tripType === "round-trip"
+                        ? "flex-col md:flex-row md:flex-1"
+                        : "flex-1"
                     }`}
                   >
                     <div
                       className={
-                        tripType === "round-trip" ? "flex-1" : "w-full"
+                        tripType === "round-trip" ? "flex-1 min-w-0" : "w-full"
                       }
                     >
                       <Calendar20
                         placeholder="Departure Date & Time"
+                        value={
+                          flight.date
+                            ? {
+                                date: flight.date,
+                                time: flight.time || undefined,
+                              }
+                            : undefined
+                        }
                         onChange={(value) =>
                           handleDateChange(flight.id, "date", value)
                         }
@@ -306,9 +382,17 @@ export function CompactSearchForm({ onSearch }: CompactSearchFormProps) {
                     </div>
 
                     {tripType === "round-trip" && (
-                      <div className="flex-1">
+                      <div className="flex-1 min-w-0">
                         <Calendar20
                           placeholder="Return Date & Time"
+                          value={
+                            flight.returnDate
+                              ? {
+                                  date: flight.returnDate,
+                                  time: flight.returnTime || undefined,
+                                }
+                              : undefined
+                          }
                           onChange={(value) =>
                             handleDateChange(flight.id, "returnDate", value)
                           }
@@ -317,11 +401,11 @@ export function CompactSearchForm({ onSearch }: CompactSearchFormProps) {
                     )}
                   </div>
 
-                  {/* Line 3: Passengers */}
-                  <div className="flex w-full lg:w-1/3 lg:-mt-2 items-center">
-                    <div className="flex w-full justify-between items-center px-3 py-1 bg-white border border-gray-300 ">
-                      <Users className="w-4 h-4 text-gray-500" />
-                      <div className="flex gap-2 items-center">
+                  {/* Passengers and Remove button - Fixed width */}
+                  <div className="flex gap-2 items-center lg:w-auto">
+                    <div className="flex items-center px-3 pt-1 pb-0.5 bg-white border border-gray-300  min-w-[120px] justify-between">
+                      <Users className="w-4 h-4 text-gray-500 shrink-0" />
+                      <div className="flex gap-2 items-center ml-2">
                         <button
                           type="button"
                           onClick={() => {
@@ -329,11 +413,11 @@ export function CompactSearchForm({ onSearch }: CompactSearchFormProps) {
                             setPassengers(next);
                             updateFlight(flight.id, { passengers: next });
                           }}
-                          className="w-7 h-7 inline-flex items-center justify-center border border-gray-300 text-black rounded"
+                          className="w-7 h-7 inline-flex items-center justify-center border border-gray-300 text-black  shrink-0"
                         >
                           <Minus className="w-3 h-3" />
                         </button>
-                        <span className="w-6 text-center text-black">
+                        <span className="w-6 text-center text-black text-sm">
                           {flight.passengers ?? passengers}
                         </span>
                         <button
@@ -343,7 +427,7 @@ export function CompactSearchForm({ onSearch }: CompactSearchFormProps) {
                             setPassengers(next);
                             updateFlight(flight.id, { passengers: next });
                           }}
-                          className="w-7 h-7 inline-flex items-center justify-center border border-gray-300 text-black rounded"
+                          className="w-7 h-7 inline-flex items-center justify-center border border-gray-300 text-black  shrink-0"
                         >
                           <Plus className="w-3 h-3" />
                         </button>
@@ -356,7 +440,7 @@ export function CompactSearchForm({ onSearch }: CompactSearchFormProps) {
                         type="button"
                         variant="destructive"
                         onClick={() => removeFlight(flight.id)}
-                        className="ml-2 bg-white text-red-600 border border-red-200 hover:bg-red-50"
+                        className="bg-white text-red-600 border border-red-200 hover:bg-red-50 shrink-0 whitespace-nowrap"
                       >
                         Remove
                       </Button>
@@ -372,7 +456,7 @@ export function CompactSearchForm({ onSearch }: CompactSearchFormProps) {
                 type="button"
                 variant="outline"
                 onClick={addFlight}
-                className="text-[#D4AF37] border-[#D4AF37] bg-white"
+                className="text-[#D4AF37] border-[#D4AF37] bg-white w-full lg:w-auto"
               >
                 <Plus className="w-4 h-4 mr-2" /> Add Flight
               </Button>

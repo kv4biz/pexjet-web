@@ -12,6 +12,23 @@ interface FinalReviewProps {
 export function FinalReview({ formData, onSubmit, onBack }: FinalReviewProps) {
   const { searchData, selectedAircraft, contactInfo } = formData;
 
+  // Helper function to format date for display
+  const formatDateForDisplay = (dateString: string | null) => {
+    if (!dateString) return "Not selected";
+
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString("en-US", {
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      });
+    } catch {
+      return dateString;
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="text-center">
@@ -33,19 +50,29 @@ export function FinalReview({ formData, onSubmit, onBack }: FinalReviewProps) {
             <div className="flex justify-between">
               <span className="text-gray-600">From:</span>
               <span className="font-medium">
-                {searchData?.departureAirport}
+                {searchData?.departureAirport || "Not specified"}
               </span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600">To:</span>
               <span className="font-medium">
-                {searchData?.destinationAirport}
+                {searchData?.destinationAirport || "Not specified"}
               </span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600">Passengers:</span>
-              <span className="font-medium">{searchData?.passengers}</span>
+              <span className="font-medium">{searchData?.passengers || 1}</span>
             </div>
+            {searchData?.departureDate && (
+              <div className="flex justify-between">
+                <span className="text-gray-600">Departure Date:</span>
+                <span className="font-medium">
+                  {formatDateForDisplay(searchData.departureDate)}
+                  {searchData.departureTime &&
+                    ` at ${searchData.departureTime}`}
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Selected Aircraft */}
@@ -53,7 +80,7 @@ export function FinalReview({ formData, onSubmit, onBack }: FinalReviewProps) {
             <h3 className="text-lg font-semibold text-gray-900 border-b pb-2">
               Selected Empty Leg
             </h3>
-            {selectedAircraft && (
+            {selectedAircraft ? (
               <div className="space-y-3">
                 <div className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
                   <img
@@ -99,6 +126,8 @@ export function FinalReview({ formData, onSubmit, onBack }: FinalReviewProps) {
                   </div>
                 </div>
               </div>
+            ) : (
+              <p className="text-gray-500 text-sm">No aircraft selected</p>
             )}
           </div>
         </div>
@@ -159,7 +188,8 @@ export function FinalReview({ formData, onSubmit, onBack }: FinalReviewProps) {
         </Button>
         <Button
           onClick={onSubmit}
-          className="bg-[#D4AF37] text-white hover:bg-[#D4AF37]/90 px-8"
+          variant={"outline"}
+          className="bg-[#D4AF37] text-[#0C0C0C] hover:bg-[#D4AF37]/90 px-8"
         >
           <Check className="w-4 h-4 mr-2" />
           Submit Empty Leg Request

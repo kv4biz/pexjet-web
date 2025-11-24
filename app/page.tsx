@@ -1,4 +1,4 @@
-import BlogTeaser from "@/components/home/BlogTeaser";
+// app/page.tsx
 import EmptyLegDeals from "@/components/home/EmptyLegDeals";
 import FleetPreview from "@/components/home/FleetPreview";
 import Footer from "@/components/Footer";
@@ -19,7 +19,6 @@ export default function Home() {
         <EmptyLegDeals />
         <FleetPreview />
         <MembershipBanner />
-        <BlogTeaser />
         <Testimonials />
         <NewsletterCTA />
       </main>

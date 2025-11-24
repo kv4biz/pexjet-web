@@ -14,46 +14,85 @@ export function MultiStepFormSection() {
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<any>({});
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [hasProcessedSearch, setHasProcessedSearch] = useState(false);
+  const [searchDataProcessed, setSearchDataProcessed] = useState(false);
 
   // Check for stored search data on component mount
   useEffect(() => {
-    const storedSearchData = sessionStorage.getItem("charterSearchData");
+    const processStoredSearchData = () => {
+      const storedSearchData = sessionStorage.getItem("charterSearchData");
 
-    if (storedSearchData) {
-      try {
-        const searchData = JSON.parse(storedSearchData);
-        setFormData({ searchData });
-        setShowLoading(true);
-        setShowForm(false);
+      if (storedSearchData && !searchDataProcessed) {
+        try {
+          const searchData = JSON.parse(storedSearchData);
+          console.log(
+            "MultiStepFormSection: Processing stored search data:",
+            searchData
+          );
 
-        // Clear the stored data so it doesn't trigger again on refresh
-        sessionStorage.removeItem("charterSearchData");
+          // Mark that we've processed this data
+          setSearchDataProcessed(true);
 
-        // After loading animation, show the form
-        setTimeout(() => {
-          setShowLoading(false);
-          setShowForm(true);
-          setCurrentStep(1);
+          // Store the search data and trigger animation
+          setFormData({ searchData });
+          setShowLoading(true);
+          setShowForm(false);
+          setHasProcessedSearch(true);
 
-          // Scroll to this section
+          // Clear the stored data immediately so CompactSearchForm doesn't see it
+          sessionStorage.removeItem("charterSearchData");
+
+          // After loading animation, show the form
           setTimeout(() => {
-            const element = document.getElementById("multi-step-form-section");
-            element?.scrollIntoView({ behavior: "smooth", block: "start" });
-          }, 100);
-        }, 8000);
-      } catch (error) {
-        console.error("Error parsing stored search data:", error);
+            setShowLoading(false);
+            setShowForm(true);
+            setCurrentStep(1);
+
+            // Scroll to this section
+            setTimeout(() => {
+              const element = document.getElementById(
+                "multi-step-form-section"
+              );
+              if (element) {
+                element.scrollIntoView({ behavior: "smooth", block: "start" });
+              }
+            }, 100);
+          }, 8000);
+        } catch (error) {
+          console.error("Error parsing stored search data:", error);
+        }
       }
-    }
-  }, []);
+    };
+
+    // Check immediately on mount
+    processStoredSearchData();
+
+    // Also set up an interval to check for a short period in case there's a race condition
+    const intervalId = setInterval(() => {
+      processStoredSearchData();
+    }, 100);
+
+    // Clear interval after 2 seconds
+    setTimeout(() => {
+      clearInterval(intervalId);
+    }, 2000);
+
+    return () => clearInterval(intervalId);
+  }, [searchDataProcessed]);
 
   // Keep the existing event listener for backward compatibility
   useEffect(() => {
     const handleSearchSubmitted = (event: CustomEvent) => {
       const searchData = event.detail;
+      console.log(
+        "MultiStepFormSection: Received searchSubmitted event:",
+        searchData
+      );
+
       setFormData({ searchData });
       setShowLoading(true);
       setShowForm(false);
+      setHasProcessedSearch(true);
 
       setTimeout(() => {
         setShowLoading(false);
@@ -62,7 +101,9 @@ export function MultiStepFormSection() {
 
         setTimeout(() => {
           const element = document.getElementById("multi-step-form-section");
-          element?.scrollIntoView({ behavior: "smooth", block: "start" });
+          if (element) {
+            element.scrollIntoView({ behavior: "smooth", block: "start" });
+          }
         }, 100);
       }, 8000);
     };
@@ -109,10 +150,13 @@ export function MultiStepFormSection() {
     setShowLoading(false);
     setCurrentStep(1);
     setFormData({});
+    setHasProcessedSearch(false);
+    setSearchDataProcessed(false);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  if (!showForm && !showLoading) {
+  // Show the section if we have data to process or are already showing form/loading
+  if (!showForm && !showLoading && !hasProcessedSearch) {
     return null;
   }
 
@@ -156,7 +200,7 @@ export function MultiStepFormSection() {
         {/* Success Modal */}
         {showSuccessModal && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="bg-white max-w-4xl max-h-[90vh] overflow-hidden flex flex-col rounded-lg">
               {/* Header */}
               <div className="p-8 border-b border-gray-200">
                 <div className="text-center">
@@ -191,8 +235,7 @@ export function MultiStepFormSection() {
                 <div className="text-center">
                   <Button
                     onClick={handleModalClose}
-                    variant={"link"}
-                    className=""
+                    className="bg-[#D4AF37] text-[#0C0C0C] hover:bg-[#B8941F]"
                   >
                     I Understand & Close
                   </Button>

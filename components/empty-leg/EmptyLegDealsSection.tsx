@@ -238,11 +238,11 @@ export function EmptyLegDealsSection() {
           <div className="relative">
             <HoverCard>
               <HoverCardTrigger asChild>
-                <div className="relative cursor-help group">
+                <div className="relative cursor-help h-full group">
                   <img
                     src={deal.image}
                     alt={deal.name}
-                    className="w-full md:w-48 h-48 object-cover "
+                    className="w-full md:w-48 h-48 lg:h-full object-cover "
                   />
                   {/* Translucent info icon overlay */}
                   <div className="absolute bottom-2 right-2 bg-black/50 backdrop-blur-sm rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
@@ -339,9 +339,9 @@ export function EmptyLegDealsSection() {
           </div>
 
           {/* Deal Details */}
-          <div className="flex-1 w-full space-y-2">
+          <div className="flex-1 w-full">
             {/* Flight Route */}
-            <div className="bg-gray-50 p-3 ">
+            <div className="bg-gray-50 p-2">
               <div className="flex items-center justify-between text-sm">
                 <div className="text-center flex-1">
                   <div className="font-semibold text-gray-900">Departure</div>
@@ -363,7 +363,7 @@ export function EmptyLegDealsSection() {
             </div>
 
             {/* Specifications Grid */}
-            <div className="flex gap-3 text-sm justify-between mx-5 md:mx-20">
+            <div className="flex flex-wrap gap-3 text-sm justify-between mx-5 ">
               <div className="flex items-center gap-2">
                 <Users className="w-4 h-4 text-gray-500" />
                 <div>
@@ -385,6 +385,15 @@ export function EmptyLegDealsSection() {
                 <div className="text-sm text-gray-500 line-through">
                   {deal.originalPrice}
                 </div>
+              </div>
+            </div>
+            {/* Aircraft Specifications - Mobile Only */}
+            <div className="md:hidden mt-1 px-3 py-1 bg-gray-50">
+              <div className="text-center">
+                <h4 className="font-bold text-gray-900 text-sm">{deal.name}</h4>
+                <p className="text-xs text-gray-600 capitalize">
+                  {deal.jetType}
+                </p>
               </div>
             </div>
 

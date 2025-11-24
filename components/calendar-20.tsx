@@ -1,3 +1,4 @@
+// components/calendar-20.tsx
 "use client";
 
 import * as React from "react";
@@ -7,16 +8,43 @@ import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { ChevronDownIcon } from "lucide-react";
 
 interface Calendar20Props {
-  placeholder?: string; // custom placeholder
-  onChange?: (val: { date?: string | null; time?: string | null }) => void;
+  placeholder?: string;
+  value?: { date?: string | null; time?: string | null };
+  onChange?: (value: { date?: string | null; time?: string | null }) => void;
+  isReturnDate?: boolean; // Add this prop to distinguish between departure and return
 }
 
 export function Calendar20({
   placeholder = "Select date & time",
+  value,
+  onChange,
+  isReturnDate = false, // Default to false for departure dates
 }: Calendar20Props) {
   const [open, setOpen] = React.useState(false);
-  const [date, setDate] = React.useState<Date | undefined>(undefined);
-  const [selectedTime, setSelectedTime] = React.useState<string | null>(null);
+
+  // Convert string date to Date object for the calendar - FIXED TIMEZONE ISSUE
+  const date = React.useMemo(() => {
+    if (!value?.date) return undefined;
+
+    try {
+      // Create date in local timezone to avoid timezone shift issues
+      const [year, month, day] = value.date.split("-").map(Number);
+      const localDate = new Date(year, month - 1, day);
+
+      // Validate the date
+      if (isNaN(localDate.getTime())) {
+        console.warn("Invalid date:", value.date);
+        return undefined;
+      }
+
+      return localDate;
+    } catch (error) {
+      console.error("Error parsing date:", error);
+      return undefined;
+    }
+  }, [value?.date]);
+
+  const selectedTime = value?.time || null;
 
   // Generate 15-minute time slots from 09:00 to 17:00
   const timeSlots = Array.from({ length: 37 }, (_, i) => {
@@ -28,26 +56,92 @@ export function Calendar20({
       .padStart(2, "0")}`;
   });
 
-  const displayValue =
-    date && selectedTime
-      ? `${date.toLocaleDateString()} • ${selectedTime}`
-      : date
-      ? `${date.toLocaleDateString()} • Select time`
-      : placeholder;
+  // Different display logic for return dates (no time)
+  const displayValue = isReturnDate
+    ? date
+      ? date.toLocaleDateString()
+      : placeholder
+    : date && selectedTime
+    ? `${date.toLocaleDateString()} • ${selectedTime}`
+    : date
+    ? `${date.toLocaleDateString()} • Select time`
+    : placeholder;
 
   // Define today and 12 months ahead
   const today = new Date();
+  today.setHours(0, 0, 0, 0); // Set to beginning of day
+
   const maxDate = new Date();
   maxDate.setFullYear(maxDate.getFullYear() + 1);
+  maxDate.setHours(23, 59, 59, 999);
+
+  // Handle date selection - FIXED DATE FORMATTING
+  const handleDateSelect = (selectedDate: Date | undefined) => {
+    if (selectedDate) {
+      // Format as YYYY-MM-DD without timezone issues
+      const year = selectedDate.getFullYear();
+      const month = String(selectedDate.getMonth() + 1).padStart(2, "0");
+      const day = String(selectedDate.getDate()).padStart(2, "0");
+      const dateString = `${year}-${month}-${day}`;
+
+      if (isReturnDate) {
+        // For return dates, only send date, no time
+        onChange?.({
+          date: dateString,
+          time: null,
+        });
+        setOpen(false); // Close immediately for return dates
+      } else {
+        // For departure dates, keep existing time if any
+        onChange?.({
+          date: dateString,
+          time: selectedTime || undefined,
+        });
+      }
+    } else {
+      onChange?.({ date: null, time: null });
+    }
+  };
+
+  // Handle time selection (only for departure dates)
+  const handleTimeSelect = (time: string) => {
+    if (isReturnDate) return; // Return dates don't have time selection
+
+    const dateString = date
+      ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(
+          2,
+          "0"
+        )}-${String(date.getDate()).padStart(2, "0")}`
+      : undefined;
+
+    onChange?.({
+      date: dateString,
+      time,
+    });
+
+    // Close popover if we have both date and time
+    if (date) {
+      setOpen(false);
+    }
+  };
+
+  // Clear selection
+  const handleClear = () => {
+    onChange?.({ date: null, time: null });
+  };
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
-          className="w-full justify-between font-normal text-left"
+          className="w-full justify-between font-normal text-left bg-white text-black border-gray-300"
         >
-          {displayValue}
+          <span
+            className={!date && !selectedTime ? "text-gray-500" : "text-black"}
+          >
+            {displayValue}
+          </span>
           <ChevronDownIcon className="h-4 w-4 opacity-70" />
         </Button>
       </PopoverTrigger>
@@ -57,36 +151,57 @@ export function Calendar20({
         align="start"
         sideOffset={8}
       >
-        <div className="flex flex-col sm:flex-row">
+        <div
+          className={`flex ${
+            isReturnDate ? "flex-col" : "flex-col sm:flex-row"
+          }`}
+        >
           {/* Calendar */}
-          <div className="p-3 border-b sm:border-b-0 sm:border-r">
+          <div
+            className={`p-3 ${
+              isReturnDate ? "" : "border-b sm:border-b-0 sm:border-r"
+            }`}
+          >
             <Calendar
               mode="single"
               selected={date}
-              onSelect={setDate}
+              onSelect={handleDateSelect}
               captionLayout="dropdown"
-              fromDate={today} // earliest selectable date
-              toDate={maxDate} // latest selectable date
+              fromDate={today}
+              toDate={maxDate}
               className="rounded-md"
             />
+
+            {/* Clear button */}
+            {(date || (!isReturnDate && selectedTime)) && (
+              <div className="p-2 border-t">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleClear}
+                  className="w-full text-red-600 border-red-200 hover:bg-red-50"
+                >
+                  Clear
+                </Button>
+              </div>
+            )}
           </div>
 
-          {/* Time Slots */}
-          <div className="max-h-80 overflow-y-auto p-3 w-full sm:w-48">
-            {timeSlots.map((time) => (
-              <Button
-                key={time}
-                variant={selectedTime === time ? "default" : "outline"}
-                onClick={() => {
-                  setSelectedTime(time);
-                  if (date) setOpen(false); // close only if date is chosen
-                }}
-                className="w-full mb-2"
-              >
-                {time}
-              </Button>
-            ))}
-          </div>
+          {/* Time Slots - Only show for departure dates */}
+          {!isReturnDate && (
+            <div className="max-h-80 overflow-y-auto p-3 w-full sm:w-48">
+              {timeSlots.map((time) => (
+                <Button
+                  key={time}
+                  variant={selectedTime === time ? "default" : "outline"}
+                  onClick={() => handleTimeSelect(time)}
+                  className="w-full mb-2"
+                >
+                  {time}
+                </Button>
+              ))}
+            </div>
+          )}
         </div>
       </PopoverContent>
     </Popover>

@@ -1,5 +1,6 @@
 // components/charter/FlightSummary.tsx
 "use client";
+import { useState } from "react";
 import { Card } from "../ui/card";
 import {
   MapPin,
@@ -7,8 +8,11 @@ import {
   Users,
   Clock,
   DollarSign,
-  Plane,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
+import { Button } from "../ui/button";
+import { FaArrowDown, FaArrowUp } from "react-icons/fa";
 
 interface FlightSummaryProps {
   formData: any;
@@ -17,6 +21,7 @@ interface FlightSummaryProps {
 
 export function FlightSummary({ formData, currentStep }: FlightSummaryProps) {
   const { searchData, selectedAircraft, contactInfo } = formData;
+  const [currentFlightIndex, setCurrentFlightIndex] = useState(0);
 
   if (!searchData) return null;
 
@@ -27,6 +32,7 @@ export function FlightSummary({ formData, currentStep }: FlightSummaryProps) {
     try {
       const date = new Date(dateString);
       return date.toLocaleDateString("en-US", {
+        weekday: "short",
         month: "short",
         day: "numeric",
         year: "numeric",
@@ -85,6 +91,7 @@ export function FlightSummary({ formData, currentStep }: FlightSummaryProps) {
         date: searchData.departureDate,
         returnDate: searchData.returnDate,
         time: searchData.departureTime,
+        returnTime: searchData.returnTime,
         passengers: searchData.passengers,
       },
     ];
@@ -107,6 +114,25 @@ export function FlightSummary({ formData, currentStep }: FlightSummaryProps) {
   const flights = getFlights();
   const tripType = getTripType();
   const passengerCount = getPassengerCount();
+  const isMultiLeg = tripType === "multiLeg" && flights.length > 1;
+  const isRoundTrip = tripType === "roundTrip";
+
+  // Navigation for multi-leg carousel
+  const nextFlight = () => {
+    setCurrentFlightIndex((prev) => (prev + 1) % flights.length);
+  };
+
+  const prevFlight = () => {
+    setCurrentFlightIndex(
+      (prev) => (prev - 1 + flights.length) % flights.length
+    );
+  };
+
+  const goToFlight = (index: number) => {
+    setCurrentFlightIndex(index);
+  };
+
+  const currentFlight = flights[currentFlightIndex];
 
   return (
     <Card className="border border-[#D4AF37]/20 p-6 bg-white/95 backdrop-blur-sm sticky top-6">
@@ -114,86 +140,280 @@ export function FlightSummary({ formData, currentStep }: FlightSummaryProps) {
         Flight Summary
       </p>
 
+      {/* Multi-leg Carousel Navigation */}
+      {isMultiLeg && (
+        <div className="mb-4">
+          <div className="flex items-center justify-between mb-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={prevFlight}
+              className="h-8 w-8 p-0"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+
+            <div className="text-sm font-medium">
+              Leg {currentFlightIndex + 1} of {flights.length}
+            </div>
+
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={nextFlight}
+              className="h-8 w-8 p-0"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+
+          {/* Dot indicators */}
+          <div className="flex justify-center gap-1">
+            {(
+              flights as Array<{
+                id?: string;
+                from?: string;
+                to?: string;
+                date?: string;
+                returnDate?: string;
+                time?: string;
+                returnTime?: string;
+                passengers?: number;
+              }>
+            ).map(
+              (
+                _: {
+                  id?: string;
+                  from?: string;
+                  to?: string;
+                  date?: string;
+                  returnDate?: string;
+                  time?: string;
+                  returnTime?: string;
+                  passengers?: number;
+                },
+                index: number
+              ) => (
+                <button
+                  key={index}
+                  onClick={() => goToFlight(index)}
+                  className={`w-2 h-2 rounded-full transition-colors ${
+                    index === currentFlightIndex
+                      ? "bg-[#D4AF37]"
+                      : "bg-gray-300"
+                  }`}
+                />
+              )
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Flight Route */}
-      <div className="space-y-2">
-        {tripType === "multiLeg" && flights.length > 1 ? (
-          // Multi-leg display
+      <div className="space-y-4">
+        {isMultiLeg ? (
+          // Multi-leg display with carousel
           <div className="space-y-4">
-            {flights.map((flight: any, index: number) => (
-              <div key={flight.id || index} className="space-y-3">
-                {/* From */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-[#D4AF37] rounded-full flex items-center justify-center">
-                      <MapPin className="w-4 h-4 text-white" />
-                    </div>
-                    <div>
-                      <div className="font-semibold text-gray-900">
-                        Leg {index + 1} - From
-                      </div>
-                      <div className="text-sm text-gray-600">
-                        {flight.from || "Not selected"}
-                      </div>
-                    </div>
+            {/* From */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-[#D4AF37] rounded-full flex items-center justify-center">
+                  <MapPin className="w-4 h-4 text-white" />
+                </div>
+                <div>
+                  <div className="font-semibold text-gray-900">From</div>
+                  <div className="text-sm text-gray-600">
+                    {currentFlight.from || "Not selected"}
                   </div>
                 </div>
-
-                {/* Vertical Line + Upside-Down Plane */}
-                <div className="flex justify-center">
-                  <div className="relative flex flex-col items-center">
-                    <div className="w-0.5 h-6 bg-gray-300" />
-
-                    <Plane className="w-4 h-4 text-gray-400 rotate-180 my-1" />
-
-                    <div className="w-0.5 h-6 bg-gray-300" />
-                  </div>
-                </div>
-
-                {/* To */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-[#D4AF37] rounded-full flex items-center justify-center">
-                      <MapPin className="w-4 h-4 text-white" />
-                    </div>
-                    <div>
-                      <div className="font-semibold text-gray-900">
-                        Leg {index + 1} - To
-                      </div>
-                      <div className="text-sm text-gray-600">
-                        {flight.to || "Not selected"}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Flight Date */}
-                {flight.date && (
-                  <div className="flex items-center justify-between text-sm bg-gray-50 p-2 rounded">
-                    <div className="flex items-center gap-2 text-gray-700">
-                      <Calendar className="w-3 h-3" />
-                      <span>Date:</span>
-                    </div>
-                    <span className="font-medium">
-                      {formatDateForDisplay(flight.date)}
-                      {flight.time && ` at ${flight.time}`}
-                    </span>
-                  </div>
-                )}
-
-                {index < flights.length - 1 && (
-                  <div className="border-t border-gray-200 pt-4">
-                    <div className="text-center text-sm text-gray-500">
-                      ↪ Next Leg
-                    </div>
-                  </div>
-                )}
               </div>
-            ))}
+            </div>
+
+            {/* Vertical Line + Double Arrow Down */}
+            <div className="flex justify-center">
+              <div className="relative flex flex-col items-center">
+                <div className="w-0.5 h-4 bg-gray-300" />
+                <div className="flex flex-col items-center my-1">
+                  <FaArrowDown className="w-4 h-4 text-gray-400" />
+                  <FaArrowDown className="w-4 h-4 text-gray-400 -mt-1" />
+                </div>
+                <div className="w-0.5 h-4 bg-gray-300" />
+              </div>
+            </div>
+
+            {/* To */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-[#D4AF37] rounded-full flex items-center justify-center">
+                  <MapPin className="w-4 h-4 text-white" />
+                </div>
+                <div>
+                  <div className="font-semibold text-gray-900">To</div>
+                  <div className="text-sm text-gray-600">
+                    {currentFlight.to || "Not selected"}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Flight Date & Time */}
+            {currentFlight.date && (
+              <div className="flex items-center justify-between text-sm bg-gray-50 p-2 rounded">
+                <div className="flex items-center gap-2 text-gray-700">
+                  <Calendar className="w-3 h-3" />
+                  <span>Date & Time:</span>
+                </div>
+                <span className="font-medium text-right">
+                  {formatDateForDisplay(currentFlight.date)}
+                  {currentFlight.time && <br />}
+                  {currentFlight.time && `at ${currentFlight.time}`}
+                </span>
+              </div>
+            )}
+
+            {/* Passengers for current leg */}
+            <div className="flex items-center justify-between text-sm bg-gray-50 p-2 rounded">
+              <div className="flex items-center gap-2 text-gray-700">
+                <Users className="w-3 h-3" />
+                <span>Passengers:</span>
+              </div>
+              <span className="font-medium">
+                {currentFlight.passengers || passengerCount}
+              </span>
+            </div>
+          </div>
+        ) : isRoundTrip ? (
+          // Round trip display with double arrows (down and up)
+          <div className="space-y-4">
+            {/* Outbound Flight */}
+            <div className="space-y-3">
+              <div className="text-sm font-semibold text-gray-700 bg-gray-100 px-3 py-1 rounded">
+                Outbound Flight
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-[#D4AF37] rounded-full flex items-center justify-center">
+                    <MapPin className="w-4 h-4 text-white" />
+                  </div>
+                  <div>
+                    <div className="font-semibold text-gray-900">Departure</div>
+                    <div className="text-sm text-gray-600">
+                      {flights[0]?.from || "Not selected"}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Double Arrow Down */}
+              <div className="flex justify-center">
+                <div className="relative flex flex-col items-center">
+                  <div className="w-0.5 h-4 bg-gray-300" />
+                  <div className="flex flex-col items-center my-1">
+                    <FaArrowDown className="w-4 h-4 text-gray-400" />
+                    <FaArrowDown className="w-4 h-4 text-gray-400 -mt-1" />
+                  </div>
+                  <div className="w-0.5 h-4 bg-gray-300" />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-[#D4AF37] rounded-full flex items-center justify-center">
+                    <MapPin className="w-4 h-4 text-white" />
+                  </div>
+                  <div>
+                    <div className="font-semibold text-gray-900">
+                      Destination
+                    </div>
+                    <div className="text-sm text-gray-600">
+                      {flights[0]?.to || "Not selected"}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {flights[0]?.date && (
+                <div className="flex items-center justify-between text-sm bg-gray-50 p-2 rounded">
+                  <div className="flex items-center gap-2 text-gray-700">
+                    <Calendar className="w-3 h-3" />
+                    <span>Departure:</span>
+                  </div>
+                  <span className="font-medium text-right">
+                    {formatDateForDisplay(flights[0].date)}
+                    {flights[0].time && <br />}
+                    {flights[0].time && `at ${flights[0].time}`}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* Return Flight */}
+            <div className="space-y-3">
+              <div className="text-sm font-semibold text-gray-700 bg-gray-100 px-3 py-1 rounded">
+                Return Flight
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-[#D4AF37] rounded-full flex items-center justify-center">
+                    <MapPin className="w-4 h-4 text-white" />
+                  </div>
+                  <div>
+                    <div className="font-semibold text-gray-900">Departure</div>
+                    <div className="text-sm text-gray-600">
+                      {flights[0]?.to || "Not selected"}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Double Arrow Up */}
+              <div className="flex justify-center">
+                <div className="relative flex flex-col items-center">
+                  <div className="w-0.5 h-4 bg-gray-300" />
+                  <div className="flex flex-col items-center my-1">
+                    <FaArrowUp className="w-4 h-4 text-gray-400" />
+                    <FaArrowUp className="w-4 h-4 text-gray-400 -mt-1" />
+                  </div>
+                  <div className="w-0.5 h-4 bg-gray-300" />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-[#D4AF37] rounded-full flex items-center justify-center">
+                    <MapPin className="w-4 h-4 text-white" />
+                  </div>
+                  <div>
+                    <div className="font-semibold text-gray-900">
+                      Destination
+                    </div>
+                    <div className="text-sm text-gray-600">
+                      {flights[0]?.from || "Not selected"}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {flights[0]?.returnDate && (
+                <div className="flex items-center justify-between text-sm bg-gray-50 p-2 rounded">
+                  <div className="flex items-center gap-2 text-gray-700">
+                    <Calendar className="w-3 h-3" />
+                    <span>Return:</span>
+                  </div>
+                  <span className="font-medium text-right">
+                    {formatDateForDisplay(flights[0].returnDate)}
+                    {flights[0].returnTime && <br />}
+                    {flights[0].returnTime && `at ${flights[0].returnTime}`}
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
         ) : (
-          // Single leg or round trip display
+          // Single leg display
           <div className="space-y-2">
-            {/* Departure */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 bg-[#D4AF37] rounded-full flex items-center justify-center">
@@ -208,18 +428,18 @@ export function FlightSummary({ formData, currentStep }: FlightSummaryProps) {
               </div>
             </div>
 
-            {/* Vertical Line + Upside-Down Plane */}
+            {/* Double Arrow Down */}
             <div className="flex justify-center">
               <div className="relative flex flex-col items-center">
                 <div className="w-0.5 h-4 bg-gray-300" />
-
-                <Plane className="w-5 h-5 text-gray-400 rotate-180 my-1" />
-
+                <div className="flex flex-col items-center my-1">
+                  <FaArrowDown className="w-4 h-4 text-gray-400" />
+                  <FaArrowDown className="w-4 h-4 text-gray-400 -mt-1" />
+                </div>
                 <div className="w-0.5 h-4 bg-gray-300" />
               </div>
             </div>
 
-            {/* Destination */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 bg-[#D4AF37] rounded-full flex items-center justify-center">
@@ -238,14 +458,14 @@ export function FlightSummary({ formData, currentStep }: FlightSummaryProps) {
       </div>
 
       {/* Flight Details */}
-      <div className="space-y-1 mt-4">
+      <div className="space-y-3 mt-6 pt-4 border-t border-gray-200">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-gray-800">
             <Calendar className="w-4 h-4" />
             <p>Trip Type:</p>
           </div>
           <p className="font-medium capitalize">
-            {tripType?.replace("-", " ") || "One Way"}
+            {tripType?.replace(/([A-Z])/g, " $1").trim() || "One Way"}
           </p>
         </div>
 
@@ -257,27 +477,31 @@ export function FlightSummary({ formData, currentStep }: FlightSummaryProps) {
           <p className="font-medium">{passengerCount}</p>
         </div>
 
-        {flights[0]?.date && (
+        {/* Single leg and round trip dates */}
+        {!isMultiLeg && flights[0]?.date && (
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-gray-800">
               <Clock className="w-4 h-4" />
               <p>Departure:</p>
             </div>
-            <p className="font-medium text-sm">
+            <p className="font-medium text-sm text-right">
               {formatDateForDisplay(flights[0].date)}
-              {flights[0].time && ` at ${flights[0].time}`}
+              {flights[0].time && <br />}
+              {flights[0].time && `at ${flights[0].time}`}
             </p>
           </div>
         )}
 
-        {flights[0]?.returnDate && (
+        {isRoundTrip && flights[0]?.returnDate && (
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-gray-800">
               <Clock className="w-4 h-4" />
               <p>Return:</p>
             </div>
-            <p className="font-medium text-sm">
+            <p className="font-medium text-sm text-right">
               {formatDateForDisplay(flights[0].returnDate)}
+              {flights[0].returnTime && <br />}
+              {flights[0].returnTime && `at ${flights[0].returnTime}`}
             </p>
           </div>
         )}
@@ -291,7 +515,7 @@ export function FlightSummary({ formData, currentStep }: FlightSummaryProps) {
             </div>
             <p className="font-semibold text-[#D4AF37]">
               {ranges.priceRange}
-              {tripType === "multiLeg" && flights.length > 1 && (
+              {isMultiLeg && (
                 <span className="text-xs text-gray-500 ml-1">
                   ({flights.length} legs)
                 </span>
@@ -304,7 +528,7 @@ export function FlightSummary({ formData, currentStep }: FlightSummaryProps) {
         {ranges && (
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-gray-800">
-              <Plane className="w-4 h-4" />
+              <Clock className="w-4 h-4" />
               <p className="font-medium">Flight Time:</p>
             </div>
             <p className="font-medium">{ranges.timeRange}</p>

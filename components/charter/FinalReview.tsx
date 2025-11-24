@@ -12,6 +12,46 @@ interface FinalReviewProps {
 export function FinalReview({ formData, onSubmit, onBack }: FinalReviewProps) {
   const { searchData, selectedAircraft, contactInfo } = formData;
 
+  // Helper function to format date for display
+  const formatDateForDisplay = (dateString: string | null) => {
+    if (!dateString) return "Not selected";
+
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString("en-US", {
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      });
+    } catch {
+      return dateString;
+    }
+  };
+
+  // Get flights array
+  const getFlights = () => {
+    if (searchData.flights) {
+      return searchData.flights;
+    }
+    return [
+      {
+        id: "1",
+        from: searchData.departureAirport,
+        to: searchData.destinationAirport,
+        date: searchData.departureDate,
+        returnDate: searchData.returnDate,
+        time: searchData.departureTime,
+        returnTime: searchData.returnTime,
+        passengers: searchData.passengers,
+      },
+    ];
+  };
+
+  const flights = getFlights();
+  const isMultiLeg = searchData.tripType === "multiLeg" && flights.length > 1;
+  const isRoundTrip = searchData.tripType === "roundTrip";
+
   return (
     <div className="space-y-6">
       <div className="text-center">
@@ -29,42 +69,125 @@ export function FinalReview({ formData, onSubmit, onBack }: FinalReviewProps) {
           <h3 className="text-lg font-semibold text-gray-900 border-b pb-2">
             Flight Details
           </h3>
-          <div className="space-y-2">
-            <div className="flex justify-between">
-              <span className="text-gray-600">From:</span>
-              <span className="font-medium">
-                {searchData?.departureAirport}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">To:</span>
-              <span className="font-medium">
-                {searchData?.destinationAirport}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Trip Type:</span>
-              <span className="font-medium capitalize">
-                {searchData?.tripType?.replace("-", " ")}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Passengers:</span>
-              <span className="font-medium">{searchData?.passengers}</span>
-            </div>
-            {searchData?.departureDate && (
+
+          {isMultiLeg ? (
+            // Multi-leg display
+            <div className="space-y-4">
               <div className="flex justify-between">
-                <span className="text-gray-600">Departure:</span>
-                <span className="font-medium">{searchData.departureDate}</span>
+                <span className="text-gray-600">Trip Type:</span>
+                <span className="font-medium capitalize">Multi-Leg</span>
               </div>
-            )}
-            {searchData?.returnDate && (
               <div className="flex justify-between">
-                <span className="text-gray-600">Return:</span>
-                <span className="font-medium">{searchData.returnDate}</span>
+                <span className="text-gray-600">Total Legs:</span>
+                <span className="font-medium">{flights.length}</span>
               </div>
-            )}
-          </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Passengers:</span>
+                <span className="font-medium">{searchData.passengers}</span>
+              </div>
+
+              {/* Display all flight legs */}
+              <div className="space-y-3 mt-4">
+                <h4 className="font-medium text-gray-800">Flight Legs:</h4>
+                {flights.map((flight: any, index: number) => (
+                  <div
+                    key={flight.id}
+                    className="bg-gray-50 p-3 rounded border"
+                  >
+                    <div className="font-medium text-sm mb-2">
+                      Leg {index + 1}
+                    </div>
+                    <div className="text-sm space-y-1">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">From:</span>
+                        <span className="font-medium">{flight.from}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">To:</span>
+                        <span className="font-medium">{flight.to}</span>
+                      </div>
+                      {flight.date && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Date:</span>
+                          <span className="font-medium">
+                            {formatDateForDisplay(flight.date)}
+                            {flight.time && ` at ${flight.time}`}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : isRoundTrip ? (
+            // Round trip display
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-gray-600">Trip Type:</span>
+                <span className="font-medium capitalize">Round Trip</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">From:</span>
+                <span className="font-medium">{flights[0]?.from}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">To:</span>
+                <span className="font-medium">{flights[0]?.to}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Passengers:</span>
+                <span className="font-medium">{searchData.passengers}</span>
+              </div>
+              {flights[0]?.date && (
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Departure:</span>
+                  <span className="font-medium">
+                    {formatDateForDisplay(flights[0].date)}
+                    {flights[0].time && ` at ${flights[0].time}`}
+                  </span>
+                </div>
+              )}
+              {flights[0]?.returnDate && (
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Return:</span>
+                  <span className="font-medium">
+                    {formatDateForDisplay(flights[0].returnDate)}
+                    {flights[0].returnTime && ` at ${flights[0].returnTime}`}
+                  </span>
+                </div>
+              )}
+            </div>
+          ) : (
+            // One-way display
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-gray-600">Trip Type:</span>
+                <span className="font-medium capitalize">One Way</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">From:</span>
+                <span className="font-medium">{flights[0]?.from}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">To:</span>
+                <span className="font-medium">{flights[0]?.to}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Passengers:</span>
+                <span className="font-medium">{searchData.passengers}</span>
+              </div>
+              {flights[0]?.date && (
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Departure:</span>
+                  <span className="font-medium">
+                    {formatDateForDisplay(flights[0].date)}
+                    {flights[0].time && ` at ${flights[0].time}`}
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Aircraft & Contact */}
