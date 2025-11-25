@@ -6,12 +6,11 @@ export const navbarData = {
     { label: "Home", href: "/" },
     { label: "Charter", href: "/charter" },
     { label: "Empty-Leg", href: "/empty-leg" },
-    { label: "Aircrafts", href: "/aircrafts" },
+    { label: "Aircraft Management", href: "/aircrafts" },
     {
       label: "About",
       dropdown: [
         { label: "Our Company", href: "/about#company" },
-        { label: "Aircraft Acquisition", href: "/about#aircraft-acquisition" },
         { label: "Operator", href: "/about#operator" },
       ],
     },

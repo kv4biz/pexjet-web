@@ -16,9 +16,8 @@ export interface Aircraft {
 
 export const fleetData = {
   hero: {
-    title: "Our Fleet",
-    subtitle:
-      "Experience luxury and performance with our meticulously maintained fleet of premium aircraft",
+    title: "Aircraft Management & Fleet",
+    subtitle: "Discover Our Premier Fleet of Private Jets for Charter",
     image:
       "https://images.unsplash.com/photo-1657409845150-f31d72aff3a0?w=1920&q=80",
   },

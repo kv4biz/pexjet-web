@@ -25,11 +25,10 @@ export const footerData = {
     ],
     Company: [
       { label: "About Us", href: "/about#company" },
-      { label: "Aircraft Acquisition", href: "/about#aircraft-acquisition" },
       { label: "Operator", href: "/about#operator" },
     ],
     Resources: [
-      { label: "Aircrafts", href: "/aircrafts" },
+      { label: "Aircraft Management", href: "/aircrafts" },
       { label: "Contact Us", href: "/contact" },
     ],
   },
